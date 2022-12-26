@@ -6,6 +6,22 @@ import constants
 import hashlib
 import base64
 
+def gen_fingerprint(pubkey_x: int) -> bytes:
+    keccak256 = hashlib.sha3_256()
+    keccak256.update(base64.b64encode(str(pubkey_x).encode('utf-8')))
+    return sha512.Sha512(keccak256.digest()).digest()
+    
+# fingerprint is encoded fingerprint
+def gen_checksum(fingerprint: bytes) -> bytes:
+    keccak256 = hashlib.sha3_256()
+    keccak256.update(fingerprint)
+    return keccak256.digest()[:4]
+
+# this process is to be done by the receiver. if Bob sends wallet address to Alice, Alice then
+# needs to generate the checksum using the fingerprint(hash of public key) and check the bob's checksum
+def verify_checksum(fingerprint, checksum): # 4 byte checksum
+    return gen_checksum(fingerprint) == checksum
+
 # Cryptocurrency wallet
 class Wallet:
     def __init__(self):
@@ -38,6 +54,7 @@ class Wallet:
         keccak256.update(keccak256.digest())
         self.wallet_address = base64.b64encode(fingerprint + keccak256.digest()[:4]).decode('utf-8')
         self.wallet_address = self.wallet_address.replace('=', '')
+
 
     def hex(self):
         padding = ((3-(len(self.wallet_address))) % 3) # pad because every = sign was replaced
