@@ -1,5 +1,8 @@
 # contant numbers that may be required in other files.
 
+from ecc.curves import Secp521r1
+import base64
+
 # 2 raied to x
 global _2R16
 global _2R32 
@@ -8,6 +11,9 @@ global _2R128
 global _2R256
 global _2R512
 
+global TOTAL_COINS # total amount of coins
+global CURVE # elliptic curve used for Public Key Cryptography
+
 _2R16 = 0x10000
 _2R32 = 0x100000000
 _2R64 = 0x10000000000000000
@@ -15,3 +21,10 @@ _2R128 = 0x100000000000000000000000000000000
 _2R256 = 0x10000000000000000000000000000000000000000000000000000000000000000
 _2R512 = 0x100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
+# market cap limit
+TOTAL_COINS = 10000000
+
+# elliptic curve
+CURVE = Secp521r1 # P-521
+
+# default encoding is base 64
