@@ -18,9 +18,10 @@ def node_callback(event, node, connected_node, data):
 
 # Peer to Peer network without tor
 class P2P_No_TOR:
-    def __init__(self):
+    def __init__(self, debug=False):
         self.ip = requests.get("https://ident.me").text # get ip of node
         self.node = Node('127.0.0.1', 10001, node_callback)
+        self.node.debug = debug
 
     def start(self):
         self.node.start()
@@ -29,11 +30,11 @@ class P2P_No_TOR:
     def stop(self):
         self.node.stop()
 
-x = P2P_No_TOR()
+x = P2P_No_TOR(True)
 x.start()
 
 # Connect to another node, otherwise you do not have any network.
-x.node.connect_with_node('127.0.0.1', 10002)
+x.node.connect_with_node(x.ip, 10002)
 time.sleep(2)
 # Send some message to the other nodes
 x.node.send_to_nodes('{"message": "hoi from node 1"}')
