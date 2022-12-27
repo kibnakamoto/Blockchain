@@ -4,7 +4,7 @@ import datetime
 
 # initializing socket
 s = socket.socket()	
-host = socket.gethostname()
+host = '192.168.0.19' # socket.gethostname()
 port = 12345
 
 # binding port and host
