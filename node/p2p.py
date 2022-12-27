@@ -1,5 +1,6 @@
 # This file is for the peer-to-peer network for nodes to communicate with each other
 from p2pnetwork.node import Node
+from pyp2p.net import *
 import requests
 import time
 
@@ -15,17 +16,18 @@ def node_callback(event, node, connected_node, data):
 
     except Exception as e:
         print(e)
-
+# 192.168.0.24
 # Peer to Peer network without tor
 class P2P_No_TOR:
     def __init__(self, debug=False):
-        self.ip = requests.get("https://ident.me").text # get ip of node
         self.node = Node('127.0.0.1', 10001, node_callback)
         self.node.debug = debug
+        self.id = self.node.id
+
 
     def start(self):
         self.node.start()
-        time.sleep(1)
+        time.sleep(5)
 
     def stop(self):
         self.node.stop()
@@ -33,10 +35,15 @@ class P2P_No_TOR:
 x = P2P_No_TOR(True)
 x.start()
 
-# Connect to another node, otherwise you do not have any network.
-x.node.connect_with_node(x.ip, 10002)
-time.sleep(2)
-# Send some message to the other nodes
+stupid_node = Node('192.168.0.19', 10002)
+stupid_node.start()
+# Connect to another node, otherwise you do not have any network
+
+# x.node.init_server()
+# x.node.sock.listen(50)
+x.node.connect_with_node('192.168.0.19', 10002)
 x.node.send_to_nodes('{"message": "hoi from node 1"}')
+time.sleep(50)
+# Send some message to the other nodes
 
 x.stop()
