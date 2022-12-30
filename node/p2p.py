@@ -1,10 +1,11 @@
 # This file is for the peer-to-peer network for nodes to communicate with each other
+from collections import OrderedDict, deque
+from copy import deepcopy
 import requests
 import time
 import socket
 import datetime
-from copy import deepcopy
-from collections import orderedDict
+import secrets
 
 # peer to peer connection using socket
 
@@ -36,6 +37,7 @@ class Client:
     def __init__(self, ip: str, port: int, sock=None):
         self.ip = ip
         self.port = port
+        self.client = True
 
         # socket for client and server cant be the same
         # don't reuse, because the server socket should be constantly running while the client is not
@@ -65,8 +67,10 @@ class Server:
         self.host = ip
         self.sock = socket.socket()
         self.port = port
-        self.clients = orderedDict() # active client connections
-        self.dead = orderedDict() # dead client connections
+        self.clients = OrderedDict() # active client connections
+        self.dead = OrderedDict() # dead client connections
+        self.client = False
+        self._listen_ = False
 
     # assign address and port number to socket
     def bind(self, port=None):
@@ -76,8 +80,13 @@ class Server:
         self.sock.bind((self.host, self.port))
 
     # waiting for a client to connect
-    def listen(self, tm:int=30): # time in seconds
-        self.sock.listen(tm)
+    def listen(self, tm=30): # time in seconds
+        if isinstance(tm, int):
+            self.sock.listen(tm)
+        else: # boolean
+            self._listen_ = tm
+            while self._listen_:
+                self.sock.listen(100000)
 
     # accept connection
     def accept(self, quiet=False):
@@ -86,8 +95,8 @@ class Server:
             time = datetime.datetime.now()
             if self.addr in self.clients:
                 del self.clients[self.addr] # delete previous connection with same ip then connect
-            self.clients[self.addr] = [time, self.cli]
-         except:
+            self.clients[self.addr] = [time, self.cli, self.port]
+        except:
             if not quiet:
                 print("listening possibly not active")
 
@@ -97,16 +106,16 @@ class Server:
             try:
                 value[1].send(f'{self.host} testing connection passed')
             except:
-                del self.clients[value[1]]
+                del self.clients[key]
                 if key in self.dead: # delete previous same client dead connection
                     del self.dead[key]
                 self.dead[key] = value
     
     # delete all client history
     def del_history(self):
-        self.dead = orderedDict() # reset dead connections
+        self.dead = OrderedDict() # reset dead connections
         self.active_clients() # re-calculate the dead connections
-        self.dead = orderedDict() # reset dead connections
+        self.dead = OrderedDict() # reset dead connections
 
     # send data to client with specified IP
     def send(data, ip, quiet=False): # ip of where to send
@@ -123,11 +132,10 @@ class Server:
             raise ValueError("Wrong receiver IP Address, failed to send data")
         client.send(data) # send the client data
 
-    # TODO: define
     # send data to all connected clients
     def send_all(self, data):
         if not self.clients: # if there are no clients
-            if not quiet
+            if not quiet:
                 print("no clients found, scanning for clients...")
             self.listen(10)
             self.accept()
@@ -137,7 +145,7 @@ class Server:
             try:
                 value[1].send(data)
             except: # if client connection died
-                del self.clients[value[1]]
+                del self.clients[key]
                 if key in self.dead: # delete previous same client dead connection
                     del self.dead[key]
                 self.dead[key] = value
@@ -165,31 +173,92 @@ class Server:
 
     # delete server data, stop connections and quit server
     def quit_server(self):
-        pass
+        for addr, cli_tm in self.clients.items():
+            cli_tm[1].close()
+        del self.clients
+        del self.dead
 
 # TODO: have function to get a list of all nodes. list whether tor is used (only works if bridge not used)
 # Peer to Peer network without tor
 class P2P:
-    INITIAL_PORT = 12345 # netbus unofficial transportation protocol
-    __port__ # port index, starting from INITIAL_PORT, subtract from it if stopped. amount of nodes are INITIAL_PORT-port_i
     def __init__(self, debug=False):
+        self.debug = debug
         self.ip = get_ip()
-        self.sock = socket.socket()
-        self.port = None
+        # nodes = # [{address: [time, client, port]}] which is self.server.clients
+        self.port = 1025 # last used port
 
-    def listen(self):
-        
-        time.sleep(5)
+        # inititalize ports and client and server connections
+        port = self.gen_port()
+        self.server = Server(self.ip, port)
+        self.server.bind()
+        port = self.gen_port()
+        self.client = Client(self.ip, port)
+        ### The client port will be server.port-1 for every node
 
-    def connect(host, port=None):
-        if port != None:
-            self.port = port
-        
-        self.sock.connect((self.ip, self.port))
+        # change port of client and server by changing self.xxx.port = rand_port()
 
-    def stop(self):
-        self.sock.stop()
+    # generate random port if port 8333 is already in use
+    def gen_port(self):
+        #    port = secrets.randbelow(65536) # randomly generate port
+        #    while port in self.used_ports:
+        #        port = secrets.randbelow(65536) # randomly generate port
+        self.port+=1
+        port = self.port
+        return port
 
-x = P2P(True)
-x.start()
+    # listen to nodes
+    def listen(self, tm=True): # tm can be int for time or boolean for on/off
+        # create new thread for listening
+        thread = multiprocessing.Process(target=self.server.listen,args=[tm])           
+        thread.start()
+        thread.join()
 
+    # receive the sent data
+    def receive(self, buff_size=512) -> bytes:
+        # first send the buffer size, then the message so that it is known.
+        return self.client.get_message(buff_size)
+
+    # bind server with new port
+    def bind(self, port):
+        self.server.bind(port)
+
+    # try to connect to other p2p node, connect self.client to other.server
+    def connect(self, ip, port):
+        self.client.port=port
+        self.client.connect(ip, self.client.port)
+
+    # let server-side of node accept connection
+    def accept(self):
+        self.server.accept(self.debug)
+
+    # disconnect with specified node
+    def disconnect(self, ip):
+        self.server.stop(ip, self.debug)
+        self.port-=1
+
+    # server-side sends data.
+    def send(self, data, ip):
+        self.server.send(data, ip, self.debug)
+    
+    # server-side sends data to all clients
+    def send_all(self, data):
+        self,server.send_all(data)
+
+    # initalize server side from scratch
+    def sender(self, port=self.gen_port(), tm=True):
+        self.bind(port)
+        self.listen(tm) # turn off listen by self.server._listen_ = False
+        self.accept()
+    
+    # initialize client side from scratch
+    def receiver(self, ip, port):
+        self.connect(ip, port)
+        self.receive()
+
+    def quit(self):
+        pass
+
+node = P2P(True)
+node.bind(node.gen_port())
+node.listen()
+d
