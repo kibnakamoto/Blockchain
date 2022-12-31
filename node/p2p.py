@@ -6,6 +6,8 @@ import time
 import socket
 import datetime
 import secrets
+import multiprocessing
+import json
 
 # peer to peer connection using socket
 
@@ -14,8 +16,6 @@ There are both server and client applications running for a single node so that 
 is capable of both their functionalities.
 """
 
-# efficiently use ports
-# https://www.geeksforgeeks.org/50-common-ports-you-should-know/
 
 # get ipv4 of node
 def get_ip():
@@ -77,16 +77,19 @@ class Server:
         if port != None:
             self.port = port
 
+        print(self.host, self.port)
         self.sock.bind((self.host, self.port))
 
     # waiting for a client to connect
-    def listen(self, tm=30): # time in seconds
-        if isinstance(tm, int):
-            self.sock.listen(tm)
-        else: # boolean
-            self._listen_ = tm
-            while self._listen_:
-                self.sock.listen(100000)
+    def listen(self, tm=5): # backlog
+#        if isinstance(tm, int):
+#            self.sock.listen(tm)
+#        else: # boolean
+#            self._listen_ = tm
+#            while self._listen_:
+#                self.sock.listen(5)
+#                raise Exception("stopped listening, handling required")
+        self.sock.listen(tm)
 
     # accept connection
     def accept(self, quiet=False):
@@ -181,16 +184,15 @@ class Server:
 # TODO: have function to get a list of all nodes. list whether tor is used (only works if bridge not used)
 # Peer to Peer network without tor
 class P2P:
-    def __init__(self, debug=False):
+    def __init__(self, port=1025, debug=False):
         self.debug = debug
         self.ip = get_ip()
         # nodes = # [{address: [time, client, port]}] which is self.server.clients
-        self.port = 1025 # last used port
+        self.port = port # last used port
 
         # inititalize ports and client and server connections
-        port = self.gen_port()
+        port = self.port
         self.server = Server(self.ip, port)
-        self.server.bind()
         port = self.gen_port()
         self.client = Client(self.ip, port)
         ### The client port will be server.port-1 for every node
@@ -202,16 +204,19 @@ class P2P:
         #    port = secrets.randbelow(65536) # randomly generate port
         #    while port in self.used_ports:
         #        port = secrets.randbelow(65536) # randomly generate port
-        self.port+=1
+        if self.server.clients: # if there are clients. increase it, otherwise, go to initial value
+            self.port+=1
+        else:
+            self.port = 1025
         port = self.port
         return port
 
     # listen to nodes
     def listen(self, tm=True): # tm can be int for time or boolean for on/off
         # create new thread for listening
-        thread = multiprocessing.Process(target=self.server.listen,args=[tm])           
-        thread.start()
-        thread.join()
+        self.thread = multiprocessing.Process(target=self.server.listen,args=[tm])           
+        self.thread.start()
+        self.thread.join()
 
     # receive the sent data
     def receive(self, buff_size=512) -> bytes:
@@ -242,12 +247,14 @@ class P2P:
     
     # server-side sends data to all clients
     def send_all(self, data):
-        self,server.send_all(data)
+        self.server.send_all(data)
 
     # initalize server side from scratch
-    def sender(self, port=self.gen_port(), tm=True):
+    def sender(self, port=8333, tm=True):
+        self.port=port
         self.bind(port)
-        self.listen(tm) # turn off listen by self.server._listen_ = False
+        self.listen(tm)
+        self.add_node()
         self.accept()
     
     # initialize client side from scratch
@@ -255,10 +262,18 @@ class P2P:
         self.connect(ip, port)
         self.receive()
 
+    # add node to network by adding it to nodes.json
+    def add_node(self, port:int=8333, filename='nodes.json'):
+        with open(filename,'r+') as file:
+            data = json.load(file)
+            value = {"ip": self.ip, "port": self.port}
+            if value not in data["nodes"]: # add if same ip address with same port doesn't exist
+                data["nodes"].append(value)
+                file.seek(0)
+                json.dump(data, file, indent=4)
+
     def quit(self):
         pass
 
-node = P2P(True)
-node.bind(node.gen_port())
-node.listen()
-d
+node = P2P(debug=True)
+node.sender()
