@@ -1,4 +1,3 @@
-# This file is for the peer-to-peer network for nodes to communicate with each other
 from collections import OrderedDict, deque
 from copy import deepcopy
 import requests
@@ -9,6 +8,7 @@ import secrets
 import multiprocessing
 import json
 
+# This file is for the peer-to-peer network for nodes to communicate with each other
 # peer to peer connection using socket
 
 """
@@ -92,7 +92,7 @@ class Server:
         self.sock.listen(tm)
 
     # accept connection
-    def accept(self, quiet=False):
+    def accept(self, debug=True):
         try:
             self.cli, self.addr = self.sock.accept() # accept connection
             self.addr = self.addr[0]
@@ -101,8 +101,8 @@ class Server:
                 del self.clients[self.addr] # delete previous connection with same ip then connect
             self.clients[self.addr] = [time, self.cli, self.port]
         except:
-            if not quiet:
-                print("listening possibly not active")
+            if debug:
+                print("failed to accept")
 
     # find the active and dead client connections
     def active_clients(self):
@@ -122,9 +122,9 @@ class Server:
         self.dead = OrderedDict() # reset dead connections
 
     # send data to client with specified IP
-    def send(self, data, ip, quiet=False): # ip of where to send
+    def send(self, data, ip, debug=True): # ip of where to send
         if not self.clients: # if there are no clients
-            if not quiet:
+            if debug:
                 print("no clients found, scanning for clients...")
             self.listen(9)
             self.accept()
@@ -133,14 +133,13 @@ class Server:
         if ip in self.clients: # find the designated ip to send message to
             client = self.clients[ip][1]
         else:
-            print("self.addr (milf near me):", self.addr)
-            raise ValueError(f"Wrong receiver IP Address, failed to send data{self.clients, ip}")
+            raise ValueError(f"Wrong receiver IP Address, failed to send data")
         client.send(data) # send the client data
 
     # send data to all connected clients
-    def send_all(self, data):
+    def send_all(self, data, debug=True):
         if not self.clients: # if there are no clients
-            if not quiet:
+            if debug:
                 print("no clients found, scanning for clients...")
             self.listen(10)
             self.accept()
@@ -157,11 +156,11 @@ class Server:
                   
 
     # stop the connection with specified ip address
-    def stop(self, ip, quiet=False):
+    def stop(self, ip, debug=True):
         client = self.clients[ip]
         client[1].close()
 
-        if not quiet: # if quiet don't print
+        if debug: # if quiet don't print
             print(f"-----------CLOSE-CONNECTION-NODE-{client}-----------")
         if ip in self.dead:
             del self.dead[ip] # delete the last dead connection from same ip
@@ -227,7 +226,10 @@ class P2P:
 
     # bind server with new port
     def bind(self, port):
-        self.server.bind(port)
+        try:
+            self.server.bind(port)
+        except OSError: # if address is already binded
+            print("address is already binded")
 
     # try to connect to other p2p node, connect self.client to other.server
     def connect(self, ip, port):
@@ -261,7 +263,7 @@ class P2P:
     # initialize client side from scratch
     def receiver(self, ip, port):
         self.connect(ip, port)
-        self.receive()
+        return self.receive()
 
     # add node to network by adding it to nodes.json
     # send nodes.json after connection so that every node knows which ports are open for which IPs
@@ -277,9 +279,6 @@ class P2P:
     def quit(self):
         pass
 
-d = OrderedDict([('192.168.0.24', [datetime.datetime(2022, 12, 31, 12, 32, 32, 839302), '<socket.socket fd=6, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=(192.168.0.19, 8333), raddr=(192.168.0.24, 51094)>', 8333])])
-print(d['192.168.0.24'])
-
 node = P2P(debug=True)
 node.bind(8333)
 node.listen(5)
@@ -287,4 +286,5 @@ node.add_node()
 
 while True:
     node.accept()
-    node.send('data', '192.168.0.19')
+    node.send('data', '192.168.0.24')
+    node.server.cli.close()
