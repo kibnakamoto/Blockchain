@@ -1,17 +1,16 @@
-# importing required modules
 import socket	
 import datetime
 
 # initializing socket
 s = socket.socket()	
-host = '192.168.0.19' # socket.gethostname()
+host = '192.168.0.24' # socket.gethostname()
 port = 12345
 
 # binding port and host
 s.bind((host, port))
 
 # waiting for a client to connect
-s.listen(5)
+s.listen(9)
 
 while True:
     # accept connection

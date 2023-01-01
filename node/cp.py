@@ -133,7 +133,7 @@ class Server:
         if ip in self.clients: # find the designated ip to send message to
             client = self.clients[ip][1]
         else:
-            print("self.addr (milf near me):", self.addr)
+            print(self.addr)
             raise ValueError(f"Wrong receiver IP Address, failed to send data{self.clients, ip}")
         client.send(data) # send the client data
 
@@ -277,14 +277,8 @@ class P2P:
     def quit(self):
         pass
 
-d = OrderedDict([('192.168.0.24', [datetime.datetime(2022, 12, 31, 12, 32, 32, 839302), '<socket.socket fd=6, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=(192.168.0.19, 8333), raddr=(192.168.0.24, 51094)>', 8333])])
-print(d['192.168.0.24'])
+d = OrderedDict([(('192.168.0.24', 51094), [datetime.datetime(2022, 12, 31, 12, 32, 32, 839302), '<socket.socket fd=6, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=(192.168.0.19, 8333), raddr=(192.168.0.24, 51094)>', 8333])])
+#print(d['suck my nuts'])
 
 node = P2P(debug=True)
-node.bind(8333)
-node.listen(5)
-node.add_node()
-
-while True:
-    node.accept()
-    node.send('data', '192.168.0.19')
+node.receiver('192.168.0.19', 8333)
