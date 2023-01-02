@@ -184,8 +184,8 @@ class Server:
     def quit_server(self):
         for addr, cli_tm in self.clients.items():
             cli_tm[1].close()
-        del self.clients
-        del self.dead
+        self.clients = OrderedDict()
+        self.dead = OrderedDict()
 
 # TODO: have function to get a list of all nodes. list whether tor is used (only works if bridge not used)
 # Peer to Peer network without tor
@@ -239,7 +239,7 @@ class P2P:
             if platform == "linux" or platform == "unix" or platform == "darwin":
                 os.system(f"kill -9 $(lsof -t -i:{port} -sTCP:LISTEN)")
             elif platform == "win32": # if inferior operating system
-                subprocess.call(f'C:\\Windows\\System32\\powershell.exe Stop-Process {port}', shell=True)
+                subprocess.call(f'Stop-Process {port}', shell=True)
             else:
                 raise OSError(f"os: {platform}\tos not recognized")
             self.server.bind(port)
@@ -297,14 +297,14 @@ class P2P:
         pass
 
 node = P2P(debug=True)
-node.sender(8333, 5)
+#node.sender(8333, 5)
+#
+#while True:
+#    cli, addr = node.accept()
+#    node.send(b'data', '192.168.0.24')
+#    cli.close()
 
-while True:
-    cli, addr = node.accept()
-    node.send(b'data', '192.168.0.24')
-    cli.close()
-
-val = node.receiver('192.168.0.24', 8334) # receive from server
+val = node.receiver('192.168.0.24', 8333) # receive from server
 print(val)
 
 """ terminate port in linux
