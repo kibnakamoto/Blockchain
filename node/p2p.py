@@ -11,6 +11,7 @@ import os
 
 if platform == "win32":
     import subprocess
+    import freeport
 
 # This file is for the peer-to-peer network for nodes to communicate with each other
 # peer to peer connection using socket
@@ -239,7 +240,7 @@ class P2P:
             if platform == "linux" or platform == "unix" or platform == "darwin":
                 os.system(f"kill -9 $(lsof -t -i:{port} -sTCP:LISTEN)")
             elif platform == "win32": # if inferior operating system
-                subprocess.call(f'Stop-Process {port}', shell=True)
+                subprocess.Popen(f"freeport {port}")
             else:
                 raise OSError(f"os: {platform}\tos not recognized")
             self.server.bind(port)
