@@ -240,7 +240,10 @@ class P2P:
             if platform == "linux" or platform == "unix" or platform == "darwin":
                 os.system(f"kill -9 $(lsof -t -i:{port} -sTCP:LISTEN)")
             elif platform == "win32": # if inferior operating system
-                subprocess.Popen(f"freeport {port}")
+                subpr = subprocess.Popen(f"netstat -ano|findstr {port}", shell=True, stdout=subprocess.PIPE, stderr = subprocess.PIPE)
+                stdout, stderr = subpr.communicate()
+                pid = int(stdout.decode().strip().split(' ')[-1])
+                os.kill(pid, signal.SIGTERM)
             else:
                 raise OSError(f"os: {platform}\tos not recognized")
             self.server.bind(port)
