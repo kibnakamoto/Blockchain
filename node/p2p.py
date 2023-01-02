@@ -1,12 +1,16 @@
 from collections import OrderedDict, deque
 from copy import deepcopy
-import requests
+from sys import platform
 import time
 import socket
 import datetime
 import secrets
 import multiprocessing
 import json
+import os
+
+if platform == "win32":
+    import subprocess
 
 # This file is for the peer-to-peer network for nodes to communicate with each other
 # peer to peer connection using socket
@@ -100,6 +104,7 @@ class Server:
             if self.addr in self.clients:
                 del self.clients[self.addr] # delete previous connection with same ip then connect
             self.clients[self.addr] = [time, self.cli, self.port]
+            return self.cli, self.addr
         except:
             if debug:
                 print("failed to accept")
@@ -228,8 +233,16 @@ class P2P:
     def bind(self, port):
         try:
             self.server.bind(port)
-        except OSError: # if address is already binded
-            print("address is already binded")
+        except OSError as e: # if address is already binded
+            print("address is already binded, continuing...\nerror_msg:", e)
+            print("terminating port usage and retrying...")
+            if platform == "linux" or platform == "unix" or platform == "darwin":
+                os.system(f"kill -9 $(lsof -t -i:{port} -sTCP:LISTEN)")
+            elif platform == "win32": # if inferior operating system
+                subprocess.call(f'C:\\Windows\\System32\\powershell.exe Stop-Process {port}', shell=True)
+            else:
+                raise OSError(f"os: {platform}\tos not recognized")
+
 
     # try to connect to other p2p node, connect self.client to other.server
     def connect(self, ip, port):
@@ -238,7 +251,7 @@ class P2P:
 
     # let server-side of node accept connection
     def accept(self):
-        self.server.accept(self.debug)
+        return self.server.accept(self.debug)
 
     # disconnect with specified node
     def disconnect(self, ip):
@@ -257,8 +270,11 @@ class P2P:
         self.port=port
         self.bind(port)
         self.listen(tm)
-        self.add_node()
-        self.accept()
+
+        if platform == "win32": # if inferior os
+            self.add_node(port, os.path.abspath('nodes.json').replace('/', '\\')) # windows requires path
+        else:
+            self.add_node()
     
     # initialize client side from scratch
     def receiver(self, ip, port):
@@ -267,7 +283,7 @@ class P2P:
 
     # add node to network by adding it to nodes.json
     # send nodes.json after connection so that every node knows which ports are open for which IPs
-    def add_node(self, port=8333, filename='nodes.json'): # TODO: remove node from nodes.json when closed
+    def add_node(self, port=8333, filename='nodes.json'): # TODO: remove node from nodes.json when closed, or when active_clients() fails
         with open(filename,'r+') as file:
             data = json.load(file)
             value = {"ip": self.ip, "port": self.port}
@@ -280,11 +296,16 @@ class P2P:
         pass
 
 node = P2P(debug=True)
-node.bind(8333)
-node.listen(5)
-node.add_node()
+node.sender(8333, 5)
 
 while True:
-    node.accept()
+    cli, addr = node.accept()
     node.send('data', '192.168.0.24')
-    node.server.cli.close()
+    cli.close()
+    del cli, addr
+val = node.receiver('192.168.0.24', 8334) # receive from server
+print(val)
+
+""" terminate port in linux
+kill -9 $(lsof -t -i:8333 -sTCP:LISTEN)
+"""
