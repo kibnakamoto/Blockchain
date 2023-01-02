@@ -107,7 +107,7 @@ class Server:
             return self.cli, self.addr
         except:
             if debug:
-                print("failed to accept")
+                print("failed to accept, ip and port probably not binded")
 
     # find the active and dead client connections
     def active_clients(self):
@@ -242,6 +242,7 @@ class P2P:
                 subprocess.call(f'C:\\Windows\\System32\\powershell.exe Stop-Process {port}', shell=True)
             else:
                 raise OSError(f"os: {platform}\tos not recognized")
+            self.server.bind(port)
 
 
     # try to connect to other p2p node, connect self.client to other.server
@@ -272,7 +273,7 @@ class P2P:
         self.listen(tm)
 
         if platform == "win32": # if inferior os
-            self.add_node(port, os.path.abspath('nodes.json').replace('/', '\\')) # windows requires path
+            self.add_node(port, os.path.abspath('node\\nodes.json')) # windows requires path
         else:
             self.add_node()
     
@@ -300,9 +301,9 @@ node.sender(8333, 5)
 
 while True:
     cli, addr = node.accept()
-    node.send('data', '192.168.0.24')
+    node.send(b'data', '192.168.0.24')
     cli.close()
-    del cli, addr
+
 val = node.receiver('192.168.0.24', 8334) # receive from server
 print(val)
 
