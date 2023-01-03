@@ -8,6 +8,7 @@ import secrets
 import multiprocessing
 import json
 import os
+import signal
 
 if platform == "win32":
     import subprocess
@@ -150,7 +151,7 @@ class Server:
             self.accept()
         if not isinstance(data, bytes):
             data = str(data).encode('utf-8') # encode data if not encoded
-        for ip, value in self.clients.items():
+        for key, value in self.clients.items():
             try:
                 value[1].send(data)
             except: # if client connection died
@@ -304,14 +305,14 @@ class P2P:
         pass
 
 node = P2P(debug=True)
-node.sender(8333, 5)
+#node.sender(8333, 5)
+#
+#while True:
+#    cli, addr = node.accept()
+#    node.send(b'data', '192.168.0.24')
+#    cli.close()
 
-while True:
-    cli, addr = node.accept()
-    node.send(b'data', '192.168.0.24')
-    cli.close()
-
-val = node.receiver('192.168.0.24', 8334) # receive from server
+val = node.receiver('192.168.0.24', 12345) # receive from server
 print(val)
 
 """ terminate port in linux
