@@ -219,11 +219,14 @@ class P2P:
         return port
 
     # listen to nodes
-    def listen(self, tm=True): # tm can be int for time or boolean for on/off
+    def listen(self, tm=5):
+        self.server.listen(tm)
+
         # create new thread for listening
-        self.thread = multiprocessing.Process(target=self.server.listen,args=[tm])           
-        self.thread.start()
-        self.thread.join()
+        #self.thread = multiprocessing.Process(target=self.server.listen,args=[tm])
+        #self.thread.start()
+        #self.thread.join()
+
 
     # receive the sent data
     def receive(self, buff_size=512) -> bytes:
@@ -240,7 +243,8 @@ class P2P:
             if platform == "linux" or platform == "unix" or platform == "darwin":
                 os.system(f"kill -9 $(lsof -t -i:{port} -sTCP:LISTEN)")
             elif platform == "win32": # if inferior operating system
-                subpr = subprocess.Popen(f"netstat -ano|findstr {port}", shell=True, stdout=subprocess.PIPE, stderr = subprocess.PIPE)
+                subpr = subprocess.Popen(f"netstat -ano|findstr {port}", shell=True, 
+                                         stdout=subprocess.PIPE, stderr = subprocess.PIPE)
                 stdout, stderr = subpr.communicate()
                 pid = int(stdout.decode().strip().split(' ')[-1])
                 os.kill(pid, signal.SIGTERM)
@@ -301,12 +305,12 @@ class P2P:
         pass
 
 node = P2P(debug=True)
-#node.sender(8333, 5)
-#
-#while True:
-#    cli, addr = node.accept()
-#    node.send(b'data', '192.168.0.24')
-#    cli.close()
+node.sender(8333, 5)
+
+while True:
+    cli, addr = node.accept()
+    node.send(b'data', '192.168.0.24')
+    cli.close()
 
 val = node.receiver('192.168.0.24', 8333) # receive from server
 print(val)
