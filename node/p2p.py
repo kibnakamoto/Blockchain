@@ -228,10 +228,18 @@ class P2P:
         #self.thread.join()
 
 
-    # receive the sent data
-    def receive(self, buff_size=512) -> bytes:
-        # first send the buffer size, then the message so that it is known.
-        return self.client.get_message(buff_size)
+    # receive the sent data (bytes, not files)
+    def receive(self, buff_size=None) -> bytes:
+        if buff_size == None:
+            buffer = b''
+            while True:
+                chunk = self.client.get_message(128) # receive bytes until there are none to receive
+                if not chunk:
+                    break
+                buffer += chunk
+        else:
+            buffer = self.client.get_message(buff_size)
+        return buffer
 
     # bind server with new port
     def bind(self, port):
@@ -286,7 +294,7 @@ class P2P:
             self.add_node()
     
     # initialize client side from scratch
-    def receiver(self, ip, port):
+    def receiver(self, ip, port, buffsize=None): # buffsize can be custom for efficiency but isn't required
         self.connect(ip, port)
         return self.receive()
 
