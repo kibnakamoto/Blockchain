@@ -11,7 +11,6 @@ import os
 
 if platform == "win32":
     import subprocess
-    import freeport
 
 # This file is for the peer-to-peer network for nodes to communicate with each other
 # peer to peer connection using socket
@@ -312,7 +311,7 @@ while True:
     node.send(b'data', '192.168.0.24')
     cli.close()
 
-val = node.receiver('192.168.0.24', 8333) # receive from server
+val = node.receiver('192.168.0.24', 8334) # receive from server
 print(val)
 
 """ terminate port in linux
