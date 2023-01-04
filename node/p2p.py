@@ -1,3 +1,4 @@
+#!/usr/bin/python
 from collections import OrderedDict, deque
 from copy import deepcopy
 from sys import platform
@@ -6,6 +7,7 @@ import socket
 import datetime
 import secrets
 import multiprocessing
+import threading
 import json
 import os
 import signal
@@ -57,7 +59,7 @@ class Client:
         if port != None:
             self.port = port
 
-        self.sock.connect((host, self.port))
+            self.sock.connect((host, self.port))
 
     # get the message provided by the server (another node)
     def get_message(self, buff_s=512) -> bytes: # buffer size
@@ -250,13 +252,14 @@ class P2P:
             print("address is already binded, continuing...\nerror_msg:", e)
             print("terminating port usage and retrying...")
             if platform == "linux" or platform == "unix" or platform == "darwin":
-                c = subprocess.Popen(f"fuser {port}/tcp", shell=True,
+                c = subprocess.Popen(f"lsof -i tcp:8333", shell=True, # fuser {port}/tcp
                                      stdout=subprocess.PIPE, stderr = subprocess.PIPE)
                 stdout, stderr = c.communicate()
                 l = stdout.decode().strip().split(' ')
-                if l != ['']:
-                    l = [i for i in l if i]
-                    pid = int(l[2])
+                l = [i for i in l if i]
+                if l != []:
+                    print('port PID ', l)
+                    pid = int(l[0])
                     os.kill(pid, signal.SIGTERM)
                     self.server.bind(port)
                 else: # if socket state = TIME_WAIT
@@ -293,9 +296,21 @@ class P2P:
 
 
     # try to connect to other p2p node, connect self.client to other.server
-    def connect(self, ip, port):
+    def connect(self, ip, port, tm=5):
         self.client.port=port
-        self.client.connect(ip, self.client.port)
+
+        timer = time.time()+tm
+        while True:
+            try:
+                if time.time() >= timer: # try connection for tm seconds.
+                    break
+                try:
+                    self.client.connect(ip, self.client.port)
+                except OSError as e: # Transport endpoint is already connected
+                    print("error_msg:", e)
+                    break ############### HANDLE PROPERLY
+            except ConnectionRefusedError: # route refused connection
+                pass
 
     # let server-side of node accept connection
     def accept(self):
@@ -325,9 +340,12 @@ class P2P:
             self.add_node()
     
     # initialize client side from scratch
-    def receiver(self, ip, port, buffsize=None): # buffsize can be custom for efficiency but isn't required
+    def receiver(self, ip, port, buffsize=None, values=None): # buffsize can be custom for efficiency but isn't required
         self.connect(ip, port)
-        return self.receive()
+        if values != None:
+            values.put(self.receive(buffsize))
+        else:
+            return self.receive(buffsize)
 
     # add node to network by adding it to nodes.json
     # send nodes.json after connection so that every node knows which ports are open for which IPs
@@ -344,16 +362,32 @@ class P2P:
         pass
 
 node = P2P(debug=True)
-node.sender(8333, 5)
+def send():
+    node.sender(8333,5)
+    while True:
+        cli, addr = node.accept()
+        node.send(b'data', addr)
+        break
 
-while True:
-    cli, addr = node.accept()
-    node.send(b'data', '192.168.0.24')
-    cli.close()
-    break
-print("SENDER DONE: 323")
-val = node.receiver('192.168.0.24', 8334) # receive from server
-print(val)
+a = threading.Thread(target=send, args=[])
+b = threading.Thread(target=node.receiver, args=('192.168.0.24', 8334, None))
+a.start()
+b.start()
+a.join()
+b.join()
+exit()
+#t1 = multiprocessing.Process(target=node.sender, args=[8333,5])
+#node.sender(8333, 5)
+
+print("SENDER DONE: 354")
+#values = multiprocessing.Queue()
+#val = node.receiver('192.168.0.24', 8334, val) # receive from server
+#t2 = multiprocessing.Process(target=node.receiver, args=['192.168.0.24', 8334, None, values])
+#t1.start()
+#t2.start()
+#t1.join()
+#t2.join()
+#print(values.get())
 
 """ terminate port in linux
 kill -9 $(lsof -t -i:8333 -sTCP:LISTEN)
