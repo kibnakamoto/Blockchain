@@ -9,9 +9,10 @@ import multiprocessing
 import json
 import os
 import signal
+import subprocess
 
-if platform == "win32":
-    import subprocess
+if platform == "linux" or "unix" or "darwin":
+    from psutil import process_iter
 
 # This file is for the peer-to-peer network for nodes to communicate with each other
 # peer to peer connection using socket
@@ -55,7 +56,7 @@ class Client:
     def connect(self, host, port=None):
         if port != None:
             self.port = port
-        
+
         self.sock.connect((host, self.port))
 
     # get the message provided by the server (another node)
@@ -82,7 +83,7 @@ class Server:
         if port != None:
             self.port = port
 
-        print(self.host, self.port)
+        print("server.bind():", self.host, self.port)
         self.sock.bind((self.host, self.port))
 
     # waiting for a client to connect
@@ -106,9 +107,9 @@ class Server:
                 del self.clients[self.addr] # delete previous connection with same ip then connect
             self.clients[self.addr] = [time, self.cli, self.port]
             return self.cli, self.addr
-        except:
+        except OSError as e:
             if debug:
-                print("failed to accept, ip and port probably not binded")
+                print("failed to accept, ip and port probably not binded\n", e)
 
     # find the active and dead client connections
     def active_clients(self):
@@ -249,16 +250,46 @@ class P2P:
             print("address is already binded, continuing...\nerror_msg:", e)
             print("terminating port usage and retrying...")
             if platform == "linux" or platform == "unix" or platform == "darwin":
-                os.system(f"kill -9 $(lsof -t -i:{port} -sTCP:LISTEN)")
+                c = subprocess.Popen(f"fuser {port}/tcp", shell=True,
+                                     stdout=subprocess.PIPE, stderr = subprocess.PIPE)
+                stdout, stderr = c.communicate()
+                l = stdout.decode().strip().split(' ')
+                if l != ['']:
+                    l = [i for i in l if i]
+                    pid = int(l[2])
+                    os.kill(pid, signal.SIGTERM)
+                    self.server.bind(port)
+                else: # if socket state = TIME_WAIT
+                    while True:
+                        try:
+                            time.sleep(5)
+                            print("trying...", end=' ')
+                            self.server.bind(port)
+                            print("sucess!!!")
+                            break
+                        except OSError: # address already in use
+                            pass
+
             elif platform == "win32": # if inferior operating system
                 subpr = subprocess.Popen(f"netstat -ano|findstr {port}", shell=True, 
                                          stdout=subprocess.PIPE, stderr = subprocess.PIPE)
                 stdout, stderr = subpr.communicate()
-                pid = int(stdout.decode().strip().split(' ')[-1])
-                os.kill(pid, signal.SIGTERM)
+                try:
+                    pid = int(stdout.decode().strip().split(' ')[-1])
+                    os.kill(pid, signal.SIGTERM)
+                except OSError as e: # address already in use
+                    print("error_msg:", e)
+                    while True:
+                        try:
+                            time.sleep(5)
+                            print("trying...", end=' ')
+                            self.server.bind(port)
+                            print("sucess!!!")
+                            break
+                        except OSError: # address already in use
+                            pass
             else:
                 raise OSError(f"os: {platform}\tos not recognized")
-            self.server.bind(port)
 
 
     # try to connect to other p2p node, connect self.client to other.server
@@ -313,14 +344,15 @@ class P2P:
         pass
 
 node = P2P(debug=True)
-#node.sender(8333, 5)
-#
-#while True:
-#    cli, addr = node.accept()
-#    node.send(b'data', '192.168.0.24')
-#    cli.close()
+node.sender(8333, 5)
 
-val = node.receiver('192.168.0.24', 12345) # receive from server
+while True:
+    cli, addr = node.accept()
+    node.send(b'data', '192.168.0.24')
+    cli.close()
+    break
+print("SENDER DONE: 323")
+val = node.receiver('192.168.0.24', 8334) # receive from server
 print(val)
 
 """ terminate port in linux

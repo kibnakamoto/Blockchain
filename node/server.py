@@ -3,8 +3,8 @@ import datetime
 
 # initializing socket
 s = socket.socket()	
-host = '192.168.0.24' # socket.gethostname()
-port = 12345
+host = '192.168.0.19' # socket.gethostname()
+port = 8333
 
 # binding port and host
 s.bind((host, port))
