@@ -235,11 +235,14 @@ class P2P:
     def receive(self, buff_size=None) -> bytes:
         if buff_size == None:
             buffer = b''
-            while True:
-                chunk = self.client.get_message(128) # receive bytes until there are none to receive
-                if not chunk:
-                    break
-                buffer += chunk
+            try:
+                while True: # problem here ######################################################################################################################################################
+                    chunk = self.client.get_message(128) # receive bytes until there are none to receive
+                    if not chunk:
+                        break
+                    buffer += chunk
+            except OSError:
+                raise Exception
         else:
             buffer = self.client.get_message(buff_size)
         return buffer
@@ -302,15 +305,15 @@ class P2P:
         timer = time.time()+tm
         while True:
             try:
-                if time.time() >= timer: # try connection for tm seconds.
+                if time.time() > timer: # try connection for tm seconds.
                     break
                 try:
                     self.client.connect(ip, self.client.port)
                 except OSError as e: # Transport endpoint is already connected
-                    print("error_msg:", e)
+                    print("error_msg (OSError):", e)
                     break ############### HANDLE PROPERLY
-            except ConnectionRefusedError: # route refused connection
-                pass
+            except ConnectionRefusedError as e: # refused connection
+                print("error_msg (ConnectionRefusedError):", e)
 
     # let server-side of node accept connection
     def accept(self):
@@ -361,33 +364,20 @@ class P2P:
     def quit(self):
         pass
 
-node = P2P(debug=True)
-def send():
-    node.sender(8333,5)
-    while True:
-        cli, addr = node.accept()
-        node.send(b'data', addr)
-        break
+# TODO: create new socket for each client, the only way to not terminate client connection after sending message.
+# maybe try new P2P object for each node
 
-a = threading.Thread(target=send, args=[])
-b = threading.Thread(target=node.receiver, args=('192.168.0.24', 8334, None))
-a.start()
-b.start()
-a.join()
-b.join()
-exit()
-#t1 = multiprocessing.Process(target=node.sender, args=[8333,5])
-#node.sender(8333, 5)
+node = P2P(debug=True)
+node.sender(8333, 5)
+while True:
+    cli, addr = node.accept()
+    node.send('data', addr)
+    node.disconnect(addr)
+    break
 
 print("SENDER DONE: 354")
-#values = multiprocessing.Queue()
-#val = node.receiver('192.168.0.24', 8334, val) # receive from server
-#t2 = multiprocessing.Process(target=node.receiver, args=['192.168.0.24', 8334, None, values])
-#t1.start()
-#t2.start()
-#t1.join()
-#t2.join()
-#print(values.get())
+val = node.receiver("192.168.0.24", 8339)
+print(val)
 
 """ terminate port in linux
 kill -9 $(lsof -t -i:8333 -sTCP:LISTEN)
