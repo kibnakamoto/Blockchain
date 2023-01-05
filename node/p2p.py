@@ -24,7 +24,6 @@ There are both server and client applications running for a single node so that 
 is capable of both their functionalities.
 """
 
-
 # get ipv4 of node
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -73,12 +72,17 @@ class Client:
 class Server:
     def __init__(self, ip: str, port: int):
         self.host = ip
-        self.sock = socket.socket()
+        self.sock = socket.socket() # current socket in use.
         self.port = port
+        self.sockets = [self.sock] # server sockets for each client.
         self.clients = OrderedDict() # active client connections
         self.dead = OrderedDict() # dead client connections
         self.client = False
-        self._listen_ = False
+
+    # generate new socket
+    def new_sock(self): # bind, listen, accept after calling function
+        self.sock = socket.socket()
+        self.sockets.append(self.sock)
 
     # assign address and port number to socket
     def bind(self, port=None):
@@ -86,7 +90,7 @@ class Server:
             self.port = port
 
         print("server.bind():", self.host, self.port)
-        self.sock.bind((self.host, self.port))
+        self.sock.bind((self.host, self.port)) # bind current socket
 
     # waiting for a client to connect
     def listen(self, tm=5): # backlog
@@ -115,6 +119,7 @@ class Server:
 
     # find the active and dead client connections
     def active_clients(self):
+        i=0
         for key, value in self.clients.items():
             try:
                 value[1].send(f'{self.host} testing connection passed')
@@ -123,8 +128,10 @@ class Server:
                 if key in self.dead: # delete previous same client dead connection
                     del self.dead[key]
                 self.dead[key] = value
+                del self.sockets[i]
+            i+=1
     
-    # delete all client history
+    # delete all client history, doesn't delete active connections
     def del_history(self):
         self.dead = OrderedDict() # reset dead connections
         self.active_clients() # re-calculate the dead connections
@@ -154,6 +161,7 @@ class Server:
             self.accept()
         if not isinstance(data, bytes):
             data = str(data).encode('utf-8') # encode data if not encoded
+        i=0
         for key, value in self.clients.items():
             try:
                 value[1].send(data)
@@ -162,7 +170,8 @@ class Server:
                 if key in self.dead: # delete previous same client dead connection
                     del self.dead[key]
                 self.dead[key] = value
-                  
+                del self.sockets[i]
+            i+=1
 
     # stop the connection with specified ip address
     def stop(self, ip, debug=True):
@@ -174,6 +183,7 @@ class Server:
         if ip in self.dead:
             del self.dead[ip] # delete the last dead connection from same ip
         self.dead[ip] = client
+        del self.sockets[(list(self.clients)).index(ip)]
         del self.clients[ip]
         
     # TODO: find ip from time connection started
@@ -190,6 +200,8 @@ class Server:
             cli_tm[1].close()
         self.clients = OrderedDict()
         self.dead = OrderedDict()
+        self.socket = None
+        self.sockets = []
 
 # TODO: have function to get a list of all nodes. list whether tor is used (only works if bridge not used)
 # Peer to Peer network without tor
@@ -236,13 +248,13 @@ class P2P:
         if buff_size == None:
             buffer = b''
             try:
-                while True: # problem here ######################################################################################################################################################
+                while True:
                     chunk = self.client.get_message(128) # receive bytes until there are none to receive
                     if not chunk:
                         break
                     buffer += chunk
             except OSError:
-                raise Exception
+                pass
         else:
             buffer = self.client.get_message(buff_size)
         return buffer
