@@ -324,7 +324,7 @@ class P2P:
                 except OSError as e: # Transport endpoint is already connected
                     print("error_msg (OSError):", e)
                     break ############### HANDLE PROPERLY
-            except ConnectionRefusedError as e: # refused connection
+            except ConnectionRefusedError as e:
                 print("error_msg (ConnectionRefusedError):", e)
 
     # let server-side of node accept connection
@@ -387,6 +387,7 @@ while True:
     node.disconnect(addr)
     break
 
+time.sleep(1)
 print("SENDER DONE: 354")
 val = node.receiver("192.168.0.24", 8339)
 print(val)
