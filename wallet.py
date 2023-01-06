@@ -73,3 +73,4 @@ class Wallet:
 wallet = Wallet()
 wallet.new_keys()
 wallet.create_wallet_address()
+print(wallet.wallet_address)

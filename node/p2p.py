@@ -37,7 +37,7 @@ def get_ip():
 
 # get external/public ipv4 address of router
 def get_extern_ip():
-    return requests.get("https://icanhazip.com/").content.decode('utf-8')
+    return requests.get("https://icanhazip.com/").content.decode('utf-8').replace('\n', '')
 
 # client node, activated when receiver
 # TODO: implement support for multiple server connections to client
@@ -223,7 +223,7 @@ class P2P:
 
         # change port of client and server by changing self.xxx.port = rand_port()
 
-    # change ip
+    # change ip of node
     def new_ip(self, ip):
         self.ip = ip
         self.client.ip = ip
@@ -231,6 +231,7 @@ class P2P:
 
     # generate random port if port 8333 is already in use
     def gen_port(self):
+        print("generating port...")
         #    port = secrets.randbelow(65536) # randomly generate port
         #    while port in self.used_ports:
         #        port = secrets.randbelow(65536) # randomly generate port
@@ -238,7 +239,6 @@ class P2P:
             self.port+=1
         else:
             self.port = 1025
-        self.port_frwd(self.port)
         port = self.port
         return port
 
@@ -357,7 +357,13 @@ class P2P:
 
     # initalize server side from scratch
     def sender(self, port=8333, tm=True):
-        self.port=port
+        try: # try to delete port if active
+            self.delete_port()
+        except Exception:
+            pass
+
+        self.port_frwd(port)
+        port = self.port
         self.bind(port)
         self.listen(tm)
 
@@ -381,7 +387,7 @@ class P2P:
             port = self.port
         self.upnp = miniupnpc.UPnP()
         self.upnp.discoverdelay = 200
-        print('Discovering...')
+        print(f'Discovering...port={port}')
         ndevs = self.upnp.discover() # number of devices
         self.upnp.selectigd()
 
@@ -390,7 +396,7 @@ class P2P:
             port = port + 1
             redirect = self.upnp.getspecificportmapping(port, 'TCP')
         self.port = port
-        self.pmapping = self.upnp.addportmapping(self.port, 'TCP', '', self.port,
+        self.pmapping = self.upnp.addportmapping(self.port, 'TCP', self.ip, self.port,
     	                     'p2p connection on port %u' % self.port, '')
 
     def delete_port(self):
@@ -414,7 +420,7 @@ class P2P:
 # maybe try new P2P object for each node
 
 node = P2P(debug=True)
-node.new_ip('192.168.0.19')
+#node.new_ip('192.168.0.19')
 node.sender(8333, 5)
 while True:
     cli, addr = node.accept()

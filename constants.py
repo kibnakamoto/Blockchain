@@ -2,7 +2,7 @@
 
 from ecc.curves import Secp521r1
 from ecc.sha512 import Sha512
-from ecc.ecc import Aes256
+from ecc.aes import Aes256
 import base64
 from hashlib import sha256
 
