@@ -1,4 +1,3 @@
-#!/usr/bin/python
 from collections import OrderedDict, deque
 from copy import deepcopy
 from sys import platform
@@ -6,15 +5,13 @@ import time
 import socket
 import datetime
 import secrets
-import multiprocessing
 import threading
 import json
 import os
 import signal
 import subprocess
-
-if platform == "linux" or "unix" or "darwin":
-    from psutil import process_iter
+import miniupnpc
+import requests
 
 # This file is for the peer-to-peer network for nodes to communicate with each other
 # peer to peer connection using socket
@@ -24,7 +21,7 @@ There are both server and client applications running for a single node so that 
 is capable of both their functionalities.
 """
 
-# get ipv4 of node
+# get internal/private ipv4 address of node
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.settimeout(0)
@@ -38,6 +35,10 @@ def get_ip():
         s.close()
     return ip
 
+# get external/public ipv4 address of router
+def get_extern_ip():
+    return requests.get("https://icanhazip.com/").content.decode('utf-8')
+
 # client node, activated when receiver
 # TODO: implement support for multiple server connections to client
 class Client:
@@ -49,7 +50,7 @@ class Client:
         # socket for client and server cant be the same
         # don't reuse, because the server socket should be constantly running while the client is not
         if sock == None:
-            self.sock = socket.socket()
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         else:
             self.sock = sock
 
@@ -72,7 +73,7 @@ class Client:
 class Server:
     def __init__(self, ip: str, port: int):
         self.host = ip
-        self.sock = socket.socket() # current socket in use.
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # current socket in use.
         self.port = port
         self.sockets = [self.sock] # server sockets for each client.
         self.clients = OrderedDict() # active client connections
@@ -81,7 +82,7 @@ class Server:
 
     # generate new socket
     def new_sock(self): # bind, listen, accept after calling function
-        self.sock = socket.socket()
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sockets.append(self.sock)
 
     # assign address and port number to socket
@@ -209,6 +210,7 @@ class P2P:
     def __init__(self, port=1025, debug=False):
         self.debug = debug
         self.ip = get_ip()
+        self.router_ip = get_extern_ip()
         # nodes = # [{address: [time, client, port]}] which is self.server.clients
         self.port = port # last used port
 
@@ -221,6 +223,12 @@ class P2P:
 
         # change port of client and server by changing self.xxx.port = rand_port()
 
+    # change ip
+    def new_ip(self, ip):
+        self.ip = ip
+        self.client.ip = ip
+        self.server.host = ip
+
     # generate random port if port 8333 is already in use
     def gen_port(self):
         #    port = secrets.randbelow(65536) # randomly generate port
@@ -230,6 +238,7 @@ class P2P:
             self.port+=1
         else:
             self.port = 1025
+        self.port_frwd(self.port)
         port = self.port
         return port
 
@@ -267,14 +276,16 @@ class P2P:
             print("address is already binded, continuing...\nerror_msg:", e)
             print("terminating port usage and retrying...")
             if platform == "linux" or platform == "unix" or platform == "darwin":
-                c = subprocess.Popen(f"lsof -i tcp:8333", shell=True, # fuser {port}/tcp
+                c = subprocess.Popen(f"lsof -t -i:{port}", shell=True, # fuser {port}/tcp
                                      stdout=subprocess.PIPE, stderr = subprocess.PIPE)
                 stdout, stderr = c.communicate()
-                l = stdout.decode().strip().split(' ')
-                l = [i for i in l if i]
-                if l != []:
+                #l = stdout.decode().strip().split(' ')
+                #l = [i for i in l if i]
+                #if l != []:
+                l = stdout.decode()
+                if l != '':
                     print('port PID ', l)
-                    pid = int(l[0])
+                    pid = int(l)
                     os.kill(pid, signal.SIGTERM)
                     self.server.bind(port)
                 else: # if socket state = TIME_WAIT
@@ -334,6 +345,7 @@ class P2P:
     # disconnect with specified node
     def disconnect(self, ip):
         self.server.stop(ip, self.debug)
+        self.delete_port()
 
     # server-side sends data.
     def send(self, data, ip):
@@ -362,6 +374,28 @@ class P2P:
         else:
             return self.receive(buffsize)
 
+
+    # port forwarding
+    def port_frwd(self, port=None):
+        if not port:
+            port = self.port
+        self.upnp = miniupnpc.UPnP()
+        self.upnp.discoverdelay = 200
+        print('Discovering...')
+        ndevs = self.upnp.discover() # number of devices
+        self.upnp.selectigd()
+
+        redirect = self.upnp.getspecificportmapping(port, 'TCP')
+        while redirect != None and port < 65536:
+            port = port + 1
+            redirect = self.upnp.getspecificportmapping(port, 'TCP')
+        self.port = port
+        self.pmapping = self.upnp.addportmapping(self.port, 'TCP', '', self.port,
+    	                     'p2p connection on port %u' % self.port, '')
+
+    def delete_port(self):
+        self.pmapping = self.upnp.deleteportmapping(self.port, 'TCP')
+
     # add node to network by adding it to nodes.json
     # send nodes.json after connection so that every node knows which ports are open for which IPs
     def add_node(self, port=8333, filename='nodes.json'): # TODO: remove node from nodes.json when closed, or when active_clients() fails
@@ -380,10 +414,11 @@ class P2P:
 # maybe try new P2P object for each node
 
 node = P2P(debug=True)
+node.new_ip('192.168.0.19')
 node.sender(8333, 5)
 while True:
     cli, addr = node.accept()
-    node.send('data', addr)
+    node.send('Hello', addr)
     node.disconnect(addr)
     break
 
@@ -391,6 +426,9 @@ time.sleep(1)
 print("SENDER DONE: 354")
 val = node.receiver("192.168.0.24", 8339)
 print(val)
+
+# to check if port is open on external ip: https://www.yougetsignal.com/tools/open-ports/
+# hotspot external 199.7.157.21
 
 """ terminate port in linux
 kill -9 $(lsof -t -i:8333 -sTCP:LISTEN)
