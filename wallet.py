@@ -8,8 +8,7 @@ import base64
 
 # make fingerprint into HMAC, message will be random
 def gen_fingerprint(pubkey_x: int) -> bytes:
-    keccak256 = hashlib.sha3_256()
-    keccak256.update(base64.b64encode(str(pubkey_x).encode('utf-8')))
+    base64.b
     return sha512.Sha512(keccak256.digest()).digest()
     
 # fingerprint is encoded fingerprint
@@ -45,23 +44,24 @@ class Wallet:
         self.weierstrass = curves.Weierstrass(curve.p, curve.a, curve.b)
 
     # create shared secret with receiver, create sender's shared_secret, the same thing will happen on receiver's side
-    def secure_com_sender(self, receiver_pubk):
+    def secure_com_sender(self, receiver_pubk) -> str:
         shared_secret = self.weierstrass.multiply(receiver_pubk, self.prikey)[0]
         hkdf = ecc.hkdf(shared_secret) # aes256 key
         self.ecies = ecc.Ecies()
         msg = gen_message()
-        self.fingerprint = self.ecies.hmac(msg, hkdf)
+        self.fingerprint = self.ecies.hmac(msg, hkdf)[4:]
         ct = self.ecies.encrypt(msg, hkdf, None, None)
-        return self.fingerprint[:4] + ct
+        return self.fingerprint + ct
         
-    def secure_com_receiver(self, sender_pubk, ciphertext):
+    def secure_com_receiver(self, sender_pubk, ciphertext, fingerprint) -> bool:
         shared_secret = self.weierstrass.multiply(sender_pubk, self.prikey)[0]
         hkdf = ecc.hkdf(shared_secret) # aes256 key
         self.ecies = ecc.Ecies()
-        msg = gen_message()
-        pt = self.ecies.decrypt(msg, hkdf, None, None)
-        self.fingerprint = self.ecies.hmac(pt, hkdf)
+        pt = self.ecies.decrypt(ciphertext, hkdf, None, None)
+        self.fingerprint = self.ecies.hmac(pt, hkdf)[:4]
+        return self.fingerprint == fingerprint
 
+        
         
 
     # create wallet address

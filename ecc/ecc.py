@@ -157,7 +157,7 @@ def hmac(key: bytearray, msg: bytearray,block_s: int = 128,
 
 # Hash-based Key Deravation Function
 def hkdf(key,salt=None,hashf=sha256,hashlen=32,blocklen=64,inf=b"",
-         outlen=32,keylen=66):
+         outlen=32,keylen=66) -> bytes:
     # if no salt is provided, salt = zero of length hashlen
     if salt == None:
         salt = bytes.fromhex("00"*hashlen)
