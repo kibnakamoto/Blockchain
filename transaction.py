@@ -14,19 +14,13 @@ def decode_int(encoded, encoding='utf-8'):
 
 # Pay to Public Key Hash Structure
 # https://en.bitcoinwiki.org/wiki/Pay-to-Pubkey_Hash#Pay-to-PublicKey_Hash_Example
-class Pay2PubKeyHash:
-    # r_pubkey is receivers public key
-    def __init__(self, r_pubkey: tuple):
-        # public key hash to send to sender, encoded as base64
-        self.pubkey_h = wallet.gen_fingerprint(r_pubkey[0])
-        self.pubkey_h += wallet.gen_checksum(self.pubkey_h)
-        self.pubkey_h = base64.b64encode(self.pubkey_h).decode('utf-8').replace('=','')
-        #self.pubkey_h = hkdf(r_pubkey[0], hashf=sha512.Sha512, hashlen=64, blocklen=128,
-        #                     outlen=32, keylen=66) # hash using hkdf
 
-        
-
-
-class Transaction:
-    def __init__(self):
-        pass
+# wallet is senders wallet
+# wallet address is receiver's wallet address
+# amount of amount to send
+class TransactionSend(wallet.Wallet):
+    def __init__(self, wallet, wallet_addrs, amount): # checksum is the first 4 bytes of the wallet
+        super().__init__()
+        self.wallet = wallet
+        self.wa = wallet_addrs
+        self.

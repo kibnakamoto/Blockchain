@@ -49,4 +49,7 @@ HKDF_SIZE = 32 # length of HKDF output in octects
 HKDF_HASHF = sha256 # hashing algorithm used in HKDF                        
 SYMM_ALG = Aes256 # ECIES Symmetric Encryption Algorithm          
 
+# use sha256 for hkdf, and sha512 for hmac
+
 # default encoding is base 64
+
