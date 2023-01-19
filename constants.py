@@ -6,6 +6,9 @@ from ecc.aes import Aes256
 import base64
 from hashlib import sha256
 
+# blockchain version
+global VERSION
+
 # 2 raied to x
 global _2R16
 global _2R32 
@@ -15,7 +18,6 @@ global _2R256
 global _2R512
 
 global TOTAL_COINS # total amount of coins
-global CURVE # elliptic curve used for Public Key Cryptography
 
 # Cryptography Constants for Blockchain
 global CURVE
@@ -27,6 +29,8 @@ global SHA512_BLOCK_SIZE
 global HKDF_SIZE
 global HKDF_HASHF
 global SYMM_ALG # symmetric encryption algorithm
+
+VERSION = 0x00000001
 
 _2R16 = 0x10000
 _2R32 = 0x100000000

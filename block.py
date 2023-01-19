@@ -2,3 +2,5 @@
 
 
 
+
+nonce = secrets.randbelow(constants._2R64) # generate 64-bit nonce

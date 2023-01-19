@@ -3,7 +3,6 @@
 import secrets
 from ecc import ecc, sha512, curves
 import constants
-import hashlib
 import base64
 
 # fingerprint of receiver
@@ -14,6 +13,7 @@ def gen_fingerprint_r(shared_secret: int, ciphertext) -> bytes:
     fingerprint = ecies.hmac(pt, hkdf)[:4]
     return fingerprint
 
+# fingerprint of sender
 def gen_fingerprint_s(shared_secret: int, plaintext) -> tuple:
     hkdf = ecc.hkdf(shared_secret) # aes256 key
     ecies = ecc.Ecies()
@@ -55,28 +55,28 @@ class Wallet:
     # create shared secret with receiver, create sender's shared_secret, the same thing will happen on receiver's side
     def secure_com_sender(self, shared_secret) -> bytes:
         self.fingerprint = gen_fingerprint_s(shared_secret, gen_message())
-        return self.fingerprint[0] + self.fingerprint[1]
+        return base64.b64encode(self.fingerprint[0] + self.fingerprint[1])
         
-    def secure_com_receiver(self, shared_secret, ciphertext, fingerprint) -> bool:
+    def secure_com_receiver(self, shared_secret:int, ciphertext:str, fingerprint:bytes) -> bool:
         self.fingerprint = gen_fingerprint_r(shared_secret, ciphertext)[4:]
-        return self.fingerprint == fingerprint
+        return base64.b64encode(self.fingerprint) == fingerprint
 
     def hex(self):
-        padding = ((3-(len(self.wallet_address))) % 3) # pad because every = sign was replaced
-        return base64.b64decode(self.wallet_address.encode('utf-8')+b'='*padding).hex()
+        padding = ((3-(len(self.pubkey))) % 3) # pad because every = sign was replaced
+        return base64.b64decode(self.pubkey.encode('utf-8')+b'='*padding).hex()
 
     def int(self):
         try:
-            return int(self.wallet_address,16)
+            return int(self.pubkey,16)
         except ValueError:
             return int(self.hex(),16)
 
     # length in base64 without padding
     def __len__(self):
-        return len(str(self.wallet_address))
+        return len(str(self.pubkey))
 
 wallet = Wallet()
 wallet.new_keys()
-wallet.create_wallet_address()
+wallet.create_pubkey()
 
-print(wallet.wallet_address)
+print(wallet.pubkey)
