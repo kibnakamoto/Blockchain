@@ -5,3 +5,5 @@ ecc/__pycache__
 # nodes file
 node/nodes.json
 
+# user files
+user/prev_transactions.json
