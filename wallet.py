@@ -43,6 +43,7 @@ class Wallet:
         self.pubkey = None # Public Key also public wallet address
         self.prikey = None # Corrosponding Private Key
         self.balance = 0 # account balance
+        self.wallet_address = None # base64 pubkey
 
     def new_keys(self):
         curve = curves.Curve(constants.CURVE())
@@ -50,6 +51,7 @@ class Wallet:
         curve.get_pubkey()
         self.pubkey = curve.pub_k
         self.prikey = curve.pri_k
+        self.wallet_address = self.b64(self.pubkey)
         self.weierstrass = curves.Weierstrass(curve.p, curve.a, curve.b)
 
     # create shared secret with receiver, create sender's shared_secret, the same thing will happen on receiver's side
@@ -61,19 +63,22 @@ class Wallet:
         self.fingerprint = gen_fingerprint_r(shared_secret, ciphertext)[4:]
         return base64.b64encode(self.fingerprint) == fingerprint
 
-    def hex(self):
-        padding = ((3-(len(self.pubkey))) % 3) # pad because every = sign was replaced
-        return base64.b64decode(self.pubkey.encode('utf-8')+b'='*padding).hex()
+    # tuple to base64 bytes
+    def b64(self, data:tuple) -> bytes:
+        new_data = b""
+        for i in range(len(data)):
+            new_data += base64.b64encode(hex(data[i])[2:].decode('hex'))
 
-    def int(self):
-        try:
-            return int(self.pubkey,16)
-        except ValueError:
-            return int(self.hex(),16)
+            # add delimeter so the x,y coordinates are known
+            if i < len(data)-1:
+                new_data += b"|"
 
-    # length in base64 without padding
-    def __len__(self):
-        return len(str(self.pubkey))
+        return new_data
+    
+    # base64 to tuple
+    def b64_d(self, data:bytes):
+        data_list = data.decode('utf-8').split('|')
+        return (base64.b64decode(data_list[0]), base64.b64decode(data_list[1]))
 
 wallet = Wallet()
 wallet.new_keys()

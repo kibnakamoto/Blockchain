@@ -57,3 +57,6 @@ SYMM_ALG = Aes256 # ECIES Symmetric Encryption Algorithm
 
 # default encoding is base 64
 
+# miners fee of a transaction
+def calculate_fees(amount: float) -> float:
+    return (amount/100)*1.00001 # fixed fee of 0.01%
