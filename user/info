@@ -6,7 +6,13 @@ the data is deleted after use (or added to the blockchain depending on the item)
 
 
 the prev_transactions.json is the file for keys, signatures, transactions hashes.
-backup prev_transactions.json for making sure you have information to prove it belongs to you
+backup prev_transactions.json for making sure you have information to prove it belongs to you.
+
+it is the sended transactions
+
+rtransactions.json is the same as prev_transactions except it is for the received transactions.
+The difference is one has negative balance while other has positive
+
 
 format of the file is
 

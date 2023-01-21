@@ -14,10 +14,15 @@ import json
 class AmountError(ValueError):
     pass
 
+# signature error, raised when the signature is not verified
+class SignatureError(ValueError):
+    pass
+
 # transaction data format to sign
 def tx_sign_data(prev_tx:str, block_index:int, b64_pub:bytes, amount: int):
-    return sha512.Sha512(str(constants.VERSION).decode('hex') + prev_tx.encode('utf-8') + \
-           hex(block_index)[2:].decode('hex') + b64_pub + hex(amount)[2:].decode('hex')).digest() # message to sign
+    return sha512.Sha512(sha512.Sha512(str(constants.VERSION).decode('hex') + prev_tx.encode('utf-8') +
+                                       hex(block_index)[2:].decode('hex') + b64_pub +
+                                       hex(amount)[2:].decode('hex')).digest()).digest() # message to sign
 
 # transaction structure, used by the person who is sending
 class TxStructure:
@@ -27,8 +32,8 @@ class TxStructure:
         self.amount = amount
         self.pubk = pubk # receiver
         self.block_index = block_index
-        if not os.stat("user/prev_transactions.json").st_size != 0:
-            with open('user/prev_transactions.json','r') as file:
+        if not os.stat("user/rtransactions.json").st_size != 0:
+            with open('user/rtransactions.json','r') as file:
                 data = json.load(file)
                 self.prev_tx = data["transactions"][len(data)-1].keys()[0] # get previous transaction from user previous transactions
             # self.prev_tx = subprocess.check_output(['tail', '-1', 'prev_mempool']).remove('\n') # get previous transaction from mempool previous transactions
@@ -99,3 +104,18 @@ class Transaction(TxStructure):
                 data["transactions"].append({id: {self.tx_hash: [data_add]}})
                 file.seek(0)
                 json.dump(data, file, indent=4)
+# transaction receiver
+# receives the sent signature and verifies transaction
+# TODO: regenerate signature for ownership
+def tx_receiver(wlt: wallet.Wallet, pubk: tuple, amount: float, block_index:int, data:bytes, signature:tuple):
+    ecdsa = ecc.Ecdsa()
+    verified = ecdsa.verify_signature(signature, int.from_bytes(data), pubk)
+    if verified:
+        wlt.balance += amount
+        with open('user/rtransactions.json','r') as file:
+            data = json.load(file)
+            data_add = NotImplemented # TODO: how to generate this data?
+            return NotImplemented
+    else:
+        raise SignatureError("The signature couldn't be verified")
+    

@@ -265,7 +265,7 @@ class Ecdsa:
         return self.signature
     
     # let B verify A's signature
-    def verify_signature(self, signature: tuple, m_hash: int, a_pub_key: tuple):
+    def verify_signature(self, signature: tuple, m_hash: int, a_pub_key: tuple) -> bool:
         # verify that the signature point is generated correctly
         for i in range(2):
             if signature[i] == 0 or signature[i] > self.n:
