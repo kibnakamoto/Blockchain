@@ -7,3 +7,4 @@ node/nodes.json
 
 # user files
 user/prev_transactions.json
+user/rtransactions.json
