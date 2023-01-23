@@ -182,7 +182,7 @@ def hkdf(key,salt=None,hashf=sha256,hashlen=32,blocklen=64,inf=b"",
 #  only for odd prime field size p. For field size q = 2^m, use integer 
 #  conversion specified in ANSI X9.62
 class Ecdsa:
-    def __init__(self, curve=curves.Secp521r1):
+    def __init__(self, curve=curves.Secp521r1()):
         self.q = curve.p
         self.G = curve.G
         self.n = curve.n
@@ -286,7 +286,7 @@ class Ecdsa:
         return self.unauth_sign[0] == signature[0]
 
 class Ecies:
-    def __init__(self,keylen=66, encrypt_alg=Aes256, curve=curves.Secp521r1):
+    def __init__(self,keylen=66, encrypt_alg=Aes256, curve=curves.Secp521r1()):
         self.curve = curve
         self.keylen = keylen # shared-key length of hkdf shared key in octets
         self.tag = None
