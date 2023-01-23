@@ -10,17 +10,16 @@ def gen_fingerprint_r(shared_secret: int, ciphertext) -> bytes:
     hkdf = ecc.hkdf(shared_secret) # aes256 key
     ecies = ecc.Ecies()
     pt = ecies.decrypt(ciphertext, hkdf, None, None)
-    fingerprint = ecies.hmac(pt, hkdf)[:4]
+    fingerprint = ecies.gen_hmac(pt, hkdf)[:4]
     return fingerprint
 
 # fingerprint of sender
-def gen_fingerprint_s(shared_secret: int, plaintext) -> tuple:
+def gen_fingerprint_s(shared_secret: int, plaintext:str) -> tuple:
     hkdf = ecc.hkdf(shared_secret) # aes256 key
     ecies = ecc.Ecies()
-    fingerprint = ecies.hmac(plaintext, hkdf)[:4]
+    fingerprint = ecies.gen_hmac(plaintext, hkdf)[:4]
     ct = ecies.encrypt(plaintext, hkdf, None, None)
     return fingerprint, ct.encode('utf-8')
-
 
 # fingerprint is encoded fingerprint
 def gen_checksum(fingerprint: bytes) -> bytes:
@@ -34,8 +33,11 @@ def verify_checksum(fingerprint, checksum) -> bool: # 4 byte checksum
 
 # geenrate message for encrypting for secure communication
 # which is sending the public key and using hmac to verify that the message isn't verified
-def gen_message() -> bytes:
-    return secrets.token_bytes(16)
+def gen_message() -> str:
+    string = ""
+    for i in range(16):
+        string += chr(secrets.randbelow(128))
+    return string
 
 # Cryptocurrency wallet
 class Wallet:
@@ -46,28 +48,29 @@ class Wallet:
         self.wallet_address = None # base64 pubkey
 
     def new_keys(self):
-        curve = curves.Curve(constants.CURVE())
+        curve = curves.Curve(constants.CURVE)
         curve.get_prikey()
         curve.get_pubkey()
         self.pubkey = curve.pub_k
         self.prikey = curve.pri_k
         self.wallet_address = self.b64(self.pubkey)
-        self.weierstrass = curves.Weierstrass(curve.p, curve.a, curve.b)
+        self.weierstrass = curves.Weierstrass(constants.CURVE.p, constants.CURVE.a, constants.CURVE.b)
 
     # create shared secret with receiver, create sender's shared_secret, the same thing will happen on receiver's side
-    def secure_com_sender(self, shared_secret) -> bytes:
-        self.fingerprint = gen_fingerprint_s(shared_secret, gen_message())
-        return base64.b64encode(self.fingerprint[0] + self.fingerprint[1])
+    def secure_com_sender(self, shared_secret) -> tuple:
+        self.msg = gen_message()
+        self.fingerprint = gen_fingerprint_s(shared_secret, self.msg)
+        return base64.b64encode(gen_checksum(self.fingerprint[0])), self.fingerprint[1] # 1 is for ciphertext
         
-    def secure_com_receiver(self, shared_secret:int, ciphertext:str, fingerprint:bytes) -> bool:
+    def secure_com_receiver(self, shared_secret:int, ciphertext:str, checksum:bytes) -> bool:
         self.fingerprint = gen_fingerprint_r(shared_secret, ciphertext)[4:]
-        return base64.b64encode(self.fingerprint) == fingerprint
+        return base64.b64encode(gen_checksum(self.fingerprint)) == checksum
 
     # tuple to base64 bytes
     def b64(self, data:tuple) -> bytes:
         new_data = b""
         for i in range(len(data)):
-            new_data += base64.b64encode(hex(data[i])[2:].decode('hex'))
+            new_data += base64.b64encode(str(data[i]).encode('utf-8'))
 
             # add delimeter so the x,y coordinates are known
             if i < len(data)-1:
@@ -79,9 +82,3 @@ class Wallet:
     def b64_d(self, data:bytes):
         data_list = data.decode('utf-8').split('|')
         return (base64.b64decode(data_list[0]), base64.b64decode(data_list[1]))
-
-wallet = Wallet()
-wallet.new_keys()
-wallet.create_pubkey()
-
-print(wallet.pubkey)

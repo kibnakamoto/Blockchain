@@ -1,5 +1,6 @@
 # contant numbers that may be required in other files.
 
+# from ecc.curves import Secp521r1
 from ecc.curves import Secp521r1
 from ecc.sha512 import Sha512
 from ecc.aes import Aes256
@@ -43,7 +44,7 @@ _2R512 = 0x100000000000000000000000000000000000000000000000000000000000000000000
 TOTAL_COINS = 10000000
 
 # elliptic curve
-CURVE = Secp521r1 # P-521
+CURVE = Secp521r1() # P-521
 CURVE_SIZE = 66 # length of shared key in octets 
 SHA256_HASHLEN = 32 # length of hash output in octets                              
 SHA512_HASHLEN = 64 # length of hash output in octets                              
