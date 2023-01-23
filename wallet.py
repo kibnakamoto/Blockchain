@@ -6,18 +6,16 @@ import constants
 import base64
 
 # fingerprint of receiver
-def gen_fingerprint_r(shared_secret: int, ciphertext) -> bytes:
-    hkdf = ecc.hkdf(shared_secret) # aes256 key
+def gen_fingerprint_r(hkdf: int, ciphertext) -> bytes:
     ecies = ecc.Ecies()
     pt = ecies.decrypt(ciphertext, hkdf, None, None)
-    fingerprint = ecies.gen_hmac(pt, hkdf)[:4]
+    fingerprint = ecies.gen_hmac(pt, hkdf)[:4].encode('utf-8')
     return fingerprint
 
 # fingerprint of sender
-def gen_fingerprint_s(shared_secret: int, plaintext:str) -> tuple:
-    hkdf = ecc.hkdf(shared_secret) # aes256 key
+def gen_fingerprint_s(hkdf: int, plaintext:str) -> tuple:
     ecies = ecc.Ecies()
-    fingerprint = ecies.gen_hmac(plaintext, hkdf)[:4]
+    fingerprint = ecies.gen_hmac(plaintext, hkdf)[:4].encode('utf-8')
     ct = ecies.encrypt(plaintext, hkdf, None, None)
     return fingerprint, ct.encode('utf-8')
 
@@ -63,7 +61,8 @@ class Wallet:
         return base64.b64encode(gen_checksum(self.fingerprint[0])), self.fingerprint[1] # 1 is for ciphertext
         
     def secure_com_receiver(self, shared_secret:int, ciphertext:str, checksum:bytes) -> bool:
-        self.fingerprint = gen_fingerprint_r(shared_secret, ciphertext)[4:]
+        # shared_secret is equal to hkdf key
+        self.fingerprint = gen_fingerprint_r(shared_secret, ciphertext)[:4]
         return base64.b64encode(gen_checksum(self.fingerprint)) == checksum
 
     # tuple to base64 bytes
