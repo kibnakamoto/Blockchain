@@ -31,17 +31,16 @@ class TxStructure:
         self.amount = amount
         self.pubk = pubk # receiver
         self.block_index = block_index
-        if os.path.getsize('user/rtransactions.json') != 0:
-            with open('user/rtransactions.json','r') as file:
-                data = json.load(file)
+        with open('user/rtransactions.json','r') as file:
+            data = json.load(file)
+            if data["transactions"] != []:
                 tx_count = len(data["transactions"])
-                print(data["transactions"])
                 self.prev_tx = data["transactions"][-1][str(tx_count-1)][-1]["hash"] # get previous transaction from user previous transactions
                 self.prev_block_i = data["transactions"][-1][str(tx_count-1)][-1]["block index"]
             # self.prev_tx = subprocess.check_output(['tail', '-1', 'prev_mempool']).remove('\n') # get previous transaction from mempool previous transactions
-        else:
-            self.prev_tx = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-            self.prev_block_i = "0"
+            else:
+                self.prev_tx = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+                self.prev_block_i = "0"
 
         # encode public key as base 64
         self.b64_pub = b""
@@ -140,42 +139,41 @@ def tx_receiver(wlt: wallet.Wallet, pubk: tuple, amount: float, block_index:int,
     b64_prikey = base64.b64encode(str(wlt.prikey).encode('utf-8'))
     sign_data = tx_sign_data(tx_hash, block_index, wlt.b64(wlt.pubkey), amount, b64_prikey)
     signature = ecdsa.gen_signature(sign_data, wlt.prikey) # generate new signature for new ownership
-    with open('user/rtransactions.json','w+') as file:
+    with open('user/rtransactions.json','r+') as file:
         data = json.load(file)
         b64_signature = b""
-        b64_signature += base64.b64encode(int.to_bytes(signature[0]))
+        b64_signature += base64.b64encode(str(signature[0]).encode('utf-8'))
         b64_signature += b"|"
-        b64_signature += base64.b64encode(int.to_bytes(signature[1]))
+        b64_signature += base64.b64encode(str(signature[1]).encode('utf-8'))
         b64_pubk = b""
-        b64_pubk += base64.b64encode(int.to_bytes(pubk[0]))
+        b64_pubk += base64.b64encode(str(pubk[0]).encode('utf-8'))
         b64_pubk += b"|"
-        b64_pubk += base64.b64encode(int.to_bytes(pubk[1])) # senders public key
+        b64_pubk += base64.b64encode(str(pubk[1]).encode('utf-8')) # senders public key
         new_hash_info = int.to_bytes(constants.VERSION, 4, 'big') + b" " + tx_hash.encode('utf-8') + b" " + b64_signature + b" " + \
                         str(block_index).encode('utf-8') + b" " + str(amount).encode('utf-8') + b" " + b64_pubk
         new_hash = sha512.Sha512(new_hash_info).hexdigest()
         data_add = { # new transaction
             "hash": new_hash,
             "time": str(datetime.datetime.now()),
-            "private key": b64_prikey,
+            "private key": b64_prikey.decode('utf-8'),
             "version": hex(constants.VERSION)[2:],
             "prev transaction": tx_hash, # basically proof of income
-            "signature": b64_signature,
+            "signature": b64_signature.decode('utf-8'),
             "to sign": sign_data,
             "block index": hex(block_index)[2:],
-            "public key": b64_pubk,
+            "public key": b64_pubk.decode('utf-8'),
             "amount": amount
         }
-        id = len(data) # id of transaction (for ordering rtransactions.json)
-        if id != 0:
-            id-=1
-            # This condition will only check if transaction is isn't saved in the id-1.
-            # This will prevent save being called twice without another transaction in between.
+        id = len(data["transactions"])-1 # id of transaction (for ordering rtransactions.json)
+        if id > 1:
+            # TODO this if statement will not be secure against hash that isn't the final value.
+            #      if id isn't len-1, it will pass through
             if tx_hash not in data["transactions"][-1][str(id)][0]["hash"]: # add if tx_hash isn't already saved
-                data["transactions"].append({str(id): [data_add]})
+                data["transactions"].append({str(id+1): [data_add]})
                 file.seek(0)
                 json.dump(data, file, indent=4)
         else:
-            data["transactions"].append({0: [data_add]})
+            data["transactions"].append({id+1: [data_add]})
             file.seek(0)
             json.dump(data, file, indent=4)
         return new_hash
