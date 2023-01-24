@@ -37,7 +37,6 @@ class TxStructure:
                 tx_count = len(data["transactions"])
                 self.prev_tx = data["transactions"][-1][str(tx_count-1)][-1]["hash"] # get previous transaction from user previous transactions
                 self.prev_block_i = data["transactions"][-1][str(tx_count-1)][-1]["block index"]
-            # self.prev_tx = subprocess.check_output(['tail', '-1', 'prev_mempool']).remove('\n') # get previous transaction from mempool previous transactions
             else:
                 self.prev_tx = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
                 self.prev_block_i = "0"
