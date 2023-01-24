@@ -33,15 +33,24 @@ global SYMM_ALG # symmetric encryption algorithm
 
 VERSION = 0x00000001
 
-_2R16 = 0x10000
-_2R32 = 0x100000000
-_2R64 = 0x10000000000000000
-_2R128 = 0x100000000000000000000000000000000
-_2R256 = 0x10000000000000000000000000000000000000000000000000000000000000000
-_2R512 = 0x100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+_2R16 = 0xffff
+_2R32 = 0xffffffff
+_2R64 = 0xffffffffffffffff
+_2R128 = 0xffffffffffffffffffffffffffffffff
+_2R256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+_2R512 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
 # market cap limit
 TOTAL_COINS = 10000000
+
+# Difficulty of mining
+difficulty = 0x1d00ffffffffff
+
+# Target
+target = 0x00000000000000ffffffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+# recalculate timer range. Recalculate target every . times
+re_calc_target = 2016 # same as bitcoin
 
 # elliptic curve
 CURVE = Secp521r1() # P-521
