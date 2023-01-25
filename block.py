@@ -12,7 +12,7 @@ def gen_nonce() -> int:
     return secrets.randbelow(constants._2R64) # generate 64-bit nonce
 
 # generate target for sha512 using bits
-def gen_target(bits) -> int:
+def gen_target(bits:int) -> int:
     exp = bits >> 48
     mant = bits & 0xffffffffffff
     target = '%064x' % (mant * (1<<(16*(exp - 3))))
@@ -59,6 +59,31 @@ class BlockHeader:
             for transaction in transactions:
                 file.write(transaction + "\n")
 
+# find if a transaction exists
+# tx_line: transaction line from unpack_mempool
+def transaction_exists(tx_line:list[list[str]]) -> bool:
+    # transaction hash + timestamp + block_index + prev transaction + previous block index + amount
+    prev_tx = tx_line[3]
+    prev_line = tx_line[4]
+    try:
+        with open(f"blocks/{prev_line}/transactions", "r") as f:
+            data = f.readlines()
+            for line in data:
+                if line.split(' ')[0] == prev_tx:
+                    return True
+    except FileNotFoundError:
+        return False
+
+# get values from mempool
+def unpack_mempool() -> list[list[str]]:
+    with open("mempool", "r") as mempool:
+        data = mempool.readlines()
+        lst = []
+        for line in data:
+            lst.append(line.split(' '))
+    return lst
+
 class Block(BlockHeader):
     def __init__(self):
-        pass
+        mempool = unpack_mempool()
+

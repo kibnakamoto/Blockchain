@@ -85,7 +85,7 @@ class Transaction(TxStructure):
     # call after ownership verified
     def add_transaction(self):
         if self.amount+self.fees <= self.wallet.balance:
-            mempool = open("mempool", "a")
+            mempool = open("mempool", "a") # transaction hash + timestamp + block_index + prev transaction + previous block index + amount
             mempool.write(self.tx_hash + " " + self.now + " " + str(self.block_index) + " " + self.prev_tx + " " + str(self.prev_block_i) + " " + str(self.amount) + "\n")
             mempool.close()
             self.wallet.balance-=self.amount
