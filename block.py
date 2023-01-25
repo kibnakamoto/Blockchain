@@ -6,6 +6,7 @@ import secrets
 import datetime
 import struct
 import os
+import json
 
 def gen_nonce() -> int:
     return secrets.randbelow(constants._2R64) # generate 64-bit nonce
@@ -41,19 +42,22 @@ class BlockHeader:
             "timestamp": self.timestamp,
             "merkle root": self.merkle_root,
             "nonce": self.nonce
-        },
+        }
 
     # add block to blocks folder
-    def add_block(self):
+    # transactions: transactions used to calculate merkle root, the direct line from mempool. NOT JUST HASH
+    def add_block(self, transactions) -> None:
         os.makedirs("user/{self.block_index}")
         
         # append self.json to block
-        with open(f"user/{self.block_index}/block.json", 'w'):
-            pass
+        with open(f"user/{self.block_index}/block.json", 'w') as file:
+            data = json.dumps(self.json, indent=4)
+            file.write(data)
 
-        # append all transactions included in Merkle Tree in transactions.json
-        with open(f"user/{self.block_index}/transactions.json", 'w'):
-            pass
+        # append all transactions included in Merkle Tree in transactions
+        with open(f"user/{self.block_index}/transactions", 'w') as file:
+            for transaction in transactions:
+                file.write(transaction + "\n")
 
 class Block(BlockHeader):
     def __init__(self):

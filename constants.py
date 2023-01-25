@@ -49,8 +49,8 @@ difficulty = 0x1d00ffffffffff
 # Target
 target = 0x00000000000000ffffffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
-# recalculate timer range. Recalculate target every . times
-re_calc_target = 2016 # same as bitcoin
+# re-calculate target range. Recalculate target every 2016 times
+TARGET_RANGE = 2016 # same as bitcoin
 
 # elliptic curve
 CURVE = Secp521r1() # P-521

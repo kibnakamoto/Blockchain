@@ -37,6 +37,9 @@ class TxStructure:
                 tx_count = len(data["transactions"])
                 self.prev_tx = data["transactions"][-1][str(tx_count-1)][-1]["hash"] # get previous transaction from user previous transactions
                 self.prev_block_i = data["transactions"][-1][str(tx_count-1)][-1]["block index"]
+                self.prev_amount = data["transactions"][-1][str(tx_count-1)][-1]["amount"]
+                if self.prev_amount <= amount: # if previous transaction amount is smaller than requested amount
+                    raise AmountError(f"Previous transactions don't supplement amount requested:\n\tamount requested: {self.amount}\n\tprevious transaction amount: {self.prev_amount}")
             else:
                 self.prev_tx = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
                 self.prev_block_i = "0"
