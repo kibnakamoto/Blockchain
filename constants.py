@@ -43,8 +43,11 @@ _2R512 = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 # market cap limit
 TOTAL_COINS = 10000000
 
-# Difficulty of mining
-difficulty = 0x1d00ffffffffff
+# Difficulty of mining, equivilant to bits
+difficulty = 0x3a00ffffffffff 
+
+# Difficulty of mining, for difference as datetime timedelta object
+human_difficulty = 1.0 # weeks
 
 # Target
 target = 0x00000000000000ffffffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

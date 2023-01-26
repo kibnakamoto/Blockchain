@@ -11,20 +11,54 @@ import json
 def gen_nonce() -> int:
     return secrets.randbelow(constants._2R64) # generate 64-bit nonce
 
-# generate target for sha512 using bits
-def gen_target(bits:int) -> int:
+# calculate target for sha512 using bits
+def target_from_bits(bits:int) -> int:
     exp = bits >> 48
     mant = bits & 0xffffffffffff
     target = '%064x' % (mant * (1<<(16*(exp - 3))))
     target = int(target,16)
     return target
 
-# TODO: define bits for target
-def gen_bits():
-    pass
+# calculate bits from target
+# calculate target in base256
+# if first value of base256 target is bigger than 0x7f, append 0 to the beggining
+# add length of base256 target to the first 6 bytes of base256 target
+def bits_from_target(target):
+    base256 = bytearray(target.to_bytes((target.bit_length()+7)//8, 'big'))
+    if base256[0] > 0x7f:
+        base256 = int.to_bytes(0, 1, 'big') + base256
+    base256 = int.to_bytes(len(base256), 3, 'big') + base256[:6]
+    return base256
+
+# get difficulty in compact target bits
+# uses same algorithm as Bitcoin
+# https://bitcoin.stackexchange.com/questions/2924/how-to-calculate-new-bits-value
+def get_difficulty_bits():
+    block_count = os.listdir("blocks")
+    if block_count%2016 == 0:
+        block1 = json.load(open(f"blocks/{block_count-2}/block.json"))
+        block2 = json.load(open(f"blocks/{block_count-1}/block.json"))
+        format = "%d-%m-%y %H:%M:%S.%f" 
+        date1 = datetime.datetime.strptime(block1["timestamp"], format)
+        date2 = datetime.datetime.strptime(block2["timestamp"], format)
+        difference = abs(date1-date2)
+        if hasattr(difference, "month"):
+            if difference.month > 2:
+                constants.human_difficulty = 8
+        elif hasattr(difference, "days"):
+            if difference.day < 4:
+                constants.human_difficulty = 0.5
+        result = constants.target*difference.total_seconds()
+        result/=1209600.0 # two weeks
+        if result > constants._2R512: # if bigger than MAX_TARGET
+            constants.target = constants._2R512
+        else:
+            constants.target = result
+
+
 
 class BlockHeader:
-    def __init__(self, merkle_root:str, nonce:int, block_index:int, prev_hash:str, difficulty: float, bits):
+    def __init__(self, merkle_root:str, nonce:int, block_index:int, prev_hash:str, bits:int):
         self.merkle_root = merkle_root
         self.nonce = nonce
         self.block_index = block_index
@@ -33,12 +67,12 @@ class BlockHeader:
         self.version = int.to_bytes(constants.VERSION, 4, 'big')
         self.bits = bits # 8 bytes
         self.info = self.version + self.prev_hash.encode('utf-8') + self.merkle_root + self.timestamp.encode('utf-8') + \
-                    bytearray(struct.pack("f", difficulty)) + int.to_bytes(self.nonce, 8, 'big')
+                    int.to_bytes(bits, 8, 'big') + int.to_bytes(self.nonce, 8, 'big')
         self.block_hash = sha512.Sha512(self.info).hexdigest()
         self.json = {
             "hash": self.block_hash,
             "prev hash": self.prev_hash,
-            "bits": self.bits,
+            "bits": hex(self.bits)[2:],
             "timestamp": self.timestamp,
             "merkle root": self.merkle_root,
             "nonce": self.nonce
@@ -85,5 +119,17 @@ def unpack_mempool() -> list[list[str]]:
 
 class Block(BlockHeader):
     def __init__(self):
-        mempool = unpack_mempool()
-
+        self.mempool = unpack_mempool()
+        tx_line_i = 0
+        while self.mempool:
+            tx_line = self.mempool[tx_line_i]
+            if not transaction_exists(tx_line):
+                del self.mempool[tx_line_i]
+            tx_line_i += 1
+        blocks_len = len(os.listdir("blocks"))-1
+        with open(f"blocks/{blocks_len-1}/block.json") as f:
+            data = json.load(f)
+            prev_hash = data["hash"]
+            del data
+        super().__init__(merkle_root=NotImplemented, nonce=gen_nonce(), block_index=blocks_len, prev_hash=prev_hash, bits=bits_from_target(constants.target))
+        self.add_block(transactions=self.mempool)
