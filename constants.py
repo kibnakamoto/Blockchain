@@ -26,7 +26,7 @@ global CURVE_SIZE
 global SHA256_HASHLEN
 global SHA512_HASHLEN
 global SHA256_BLOCK_SIZE
-global SHA512_BLOCK_SIZE
+global SHA51B2_LOCK_SIZE
 global HKDF_SIZE
 global HKDF_HASHF
 global SYMM_ALG # symmetric encryption algorithm

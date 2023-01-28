@@ -68,7 +68,7 @@ class TxStructure:
         self.tx_hash = sha512.Sha512(self.info).hexdigest()
 
 # wallet is senders wallet
-# wallet address is receiver's wallet address
+# pubk is receiver's wallet address
 # amount of amount to send
 class Transaction(TxStructure):
     def __init__(self, wlt: wallet.Wallet, pubk: tuple, amount: float, block_index:int): # checksum is the first 4 bytes of the wallet
@@ -86,7 +86,7 @@ class Transaction(TxStructure):
     def add_transaction(self):
         if self.amount+self.fees <= self.wallet.balance:
             mempool = open("mempool", "a") # transaction hash + timestamp + block_index + prev transaction + previous block index + amount
-            mempool.write(self.tx_hash + " " + self.now + " " + str(self.block_index) + " " + self.prev_tx + " " + str(self.prev_block_i) + " " + str(self.amount) + "\n")
+            mempool.write(self.tx_hash + " " + self.now + " " + str(self.block_index) + " " + self.prev_tx + " " + str(self.prev_block_i) + " " + self.b64_pub + " " +  self.b64_signature + " " + str(self.amount) + "\n")
             mempool.close()
             self.wallet.balance-=self.amount
             self.wallet.balance-=self.fees

@@ -33,6 +33,11 @@ def bits_from_target(target):
 # get difficulty in compact target bits
 # uses same algorithm as Bitcoin
 # https://bitcoin.stackexchange.com/questions/2924/how-to-calculate-new-bits-value
+# basic pseudo-code: 
+# new_target = last_block.nBits.uncompress();
+# new_target *= actual_timespan;
+# new_target /= target_timespan;
+# this_block.nBits = new_target.compress();
 def get_difficulty_bits():
     block_count = os.listdir("blocks")
     if block_count%2016 == 0:
@@ -53,7 +58,7 @@ def get_difficulty_bits():
         if result > constants._2R512: # if bigger than MAX_TARGET
             constants.target = constants._2R512
         else:
-            constants.target = result
+            constants.target = int(result)
 
 
 
