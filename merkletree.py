@@ -1,4 +1,25 @@
 from ecc.sha512 import Sha512
+from ecc.ecc import Ecdsa
+from wallet import b64_d
+
+# get transaction hashes and public keys from mempool
+def get_mempool_verification_data() -> tuple[list[str], list[tuple[int, int]], list[tuple[int, int]], list[int], list[bool]]:
+    hashes = []
+    pubks = []
+    signatures = []
+    m_hashes = []
+    verified = []
+    ecdsa = Ecdsa()
+    with open("mempool", 'r') as mempool:
+        lines = mempool.readlines()
+        for line in lines:
+            line = line.split(' ')
+            hashes.append(line[0])
+            pubks.append(b64_d(line[5]))
+            signatures.append(b64_d(line[6]))
+            m_hashes.append(int(line[7]))
+            verified.append(ecdsa.verify_signature(signatures[-1], m_hashes[-1], pubks[-1]))
+    return hashes, pubks, signatures, m_hashes, verified
 
 class MerkleTreeNode:
     # default class contructor
@@ -14,7 +35,7 @@ class MerkleTree:
     def __init__(self, transactions:list[str]):
         self.transactions = transactions
 
-    def get_root(self):
+    def get_root(self) -> str:
         nodes = list()
         for transaction in self.transactions:
             nodes.append(MerkleTreeNode(transaction))
@@ -34,11 +55,3 @@ class MerkleTree:
                 temp.append(node)
             nodes = temp
         return nodes[0].hash
-
-# testing
-hashes = list()
-for i in range(4):
-    hashes.append(Sha512(str(i).encode('utf-8')).hexdigest())
-
-merkletree = MerkleTree(hashes)
-print(merkletree.get_root())

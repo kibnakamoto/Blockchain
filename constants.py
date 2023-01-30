@@ -1,11 +1,10 @@
 # contant numbers that may be required in other files.
+import base64
+from hashlib import sha256
 
-# from ecc.curves import Secp521r1
 from ecc.curves import Secp521r1
 from ecc.sha512 import Sha512
 from ecc.aes import Aes256
-import base64
-from hashlib import sha256
 
 # blockchain version
 global VERSION

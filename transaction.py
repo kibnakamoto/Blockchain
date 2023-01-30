@@ -86,7 +86,7 @@ class Transaction(TxStructure):
     def add_transaction(self):
         if self.amount+self.fees <= self.wallet.balance:
             mempool = open("mempool", "a") # transaction hash + timestamp + block_index + prev transaction + previous block index + amount
-            mempool.write(self.tx_hash + " " + self.now + " " + str(self.block_index) + " " + self.prev_tx + " " + str(self.prev_block_i) + " " + self.b64_pub + " " +  self.b64_signature + " " + str(self.amount) + "\n")
+            mempool.write(self.tx_hash + " " + self.now + " " + str(self.block_index) + " " + self.prev_tx + " " + str(self.prev_block_i) + " " + self.b64_pub + " " +  self.b64_signature + " " + str(self.m_hash) + " " + str(self.amount) + "\n")
             mempool.close()
             self.wallet.balance-=self.amount
             self.wallet.balance-=self.fees
@@ -139,7 +139,7 @@ def tx_receiver(wlt: wallet.Wallet, pubk: tuple, amount: float, block_index:int,
 #    if verified:
     wlt.balance += amount
     b64_prikey = base64.b64encode(str(wlt.prikey).encode('utf-8'))
-    sign_data = tx_sign_data(tx_hash, block_index, wlt.b64(wlt.pubkey), amount, b64_prikey)
+    sign_data = tx_sign_data(tx_hash, block_index, wallet.b64(wlt.pubkey), amount, b64_prikey)
     signature = ecdsa.gen_signature(sign_data, wlt.prikey) # generate new signature for new ownership
     with open('user/rtransactions.json','r+') as file:
         data = json.load(file)

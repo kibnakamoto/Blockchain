@@ -1,10 +1,10 @@
 # file for blocks structures and to be added into the blocks folder which is the blockchain
 import constants
+import merkletree
 from ecc import sha512
 
 import secrets
 import datetime
-import struct
 import os
 import json
 
@@ -38,7 +38,7 @@ def bits_from_target(target):
 # new_target *= actual_timespan;
 # new_target /= target_timespan;
 # this_block.nBits = new_target.compress();
-def get_difficulty_bits():
+def get_difficulty_target():
     block_count = os.listdir("blocks")
     if block_count%2016 == 0:
         block1 = json.load(open(f"blocks/{block_count-2}/block.json"))
@@ -123,8 +123,10 @@ def unpack_mempool() -> list[list[str]]:
     return lst
 
 class Block(BlockHeader):
-    def __init__(self):
+    def __init__(self, nonce:int, transactions:list[str]):
         self.mempool = unpack_mempool()
+        self.nonce = nonce
+        self.transactions = transactions
         tx_line_i = 0
         while self.mempool:
             tx_line = self.mempool[tx_line_i]
@@ -136,5 +138,4 @@ class Block(BlockHeader):
             data = json.load(f)
             prev_hash = data["hash"]
             del data
-        super().__init__(merkle_root=NotImplemented, nonce=gen_nonce(), block_index=blocks_len, prev_hash=prev_hash, bits=bits_from_target(constants.target))
-        self.add_block(transactions=self.mempool)
+        super().__init__(merkle_root=merkletree.MerkleTree().get_root(), nonce=self.nonce, block_index=blocks_len, prev_hash=prev_hash, bits=bits_from_target(constants.target))
