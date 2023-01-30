@@ -416,26 +416,27 @@ class P2P:
     def quit(self):
         pass
 
-# TODO: create new socket for each client, the only way to not terminate client connection after sending message.
-# maybe try new P2P object for each node
-
-node = P2P(debug=True)
-#node.new_ip('192.168.0.19')
-node.sender(8333, 5)
-while True:
-    cli, addr = node.accept()
-    node.send('Hello', addr)
-    node.disconnect(addr)
-    break
-
-time.sleep(1)
-print("SENDER DONE: 354")
-val = node.receiver("192.168.0.24", 8339)
-print(val)
-
-# to check if port is open on external ip: https://www.yougetsignal.com/tools/open-ports/
-# hotspot external 199.7.157.21
-
-""" terminate port in linux
-kill -9 $(lsof -t -i:8333 -sTCP:LISTEN)
-"""
+# testing
+# # TODO: create new socket for each client, the only way to not terminate client connection after sending message.
+# # maybe try new P2P object for each node
+# 
+# node = P2P(debug=True)
+# #node.new_ip('192.168.0.19')
+# node.sender(8333, 5)
+# while True:
+#     cli, addr = node.accept()
+#     node.send('Hello', addr)
+#     node.disconnect(addr)
+#     break
+# 
+# time.sleep(1)
+# print("SENDER DONE: 354")
+# val = node.receiver("192.168.0.24", 8339)
+# print(val)
+# 
+# # to check if port is open on external ip: https://www.yougetsignal.com/tools/open-ports/
+# # hotspot external 199.7.157.21
+# 
+# """ terminate port in linux
+# kill -9 $(lsof -t -i:8333 -sTCP:LISTEN)
+# """
