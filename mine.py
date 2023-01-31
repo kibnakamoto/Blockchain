@@ -1,4 +1,5 @@
 import multiprocessing
+
 from collections import deque
 
 import constants
@@ -54,3 +55,8 @@ class Mine:
                     thread.terminate()
                     terminate_signal = True
         self.blck.add_block(transactions=self.hashes)
+
+miner = Mine()
+miner.threading_find_nonce()
+print(miner.nonce)
+print(miner.block_hash)

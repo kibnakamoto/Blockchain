@@ -101,7 +101,7 @@ def start_receiver(port:int=8333) -> None:
         sender.get_pubkey()
         node.client.sock.send(wallet.b64(sender.pub_k)) # sends from client. Send from server
         cli, addr = node.accept()
-        received = wallet.b64_d(node.last_received)
+        received = wallet.b64_d(node.last_received.decode('utf-8'))
         a_shared_sec = w.multiply(received,sender.pri_k)[0]
         a_shared_sec = ecc.hkdf(a_shared_sec)
         checksum, ciphertext = wlt.secure_com_sender(a_shared_sec)
@@ -118,7 +118,7 @@ def start_receiver(port:int=8333) -> None:
         get_ip.destroy()
     get_ip = tk.Button(window, text="enter", command=accept)
 
-# start receiver node
+# start sender node
 # ip: ip of sender
 # port: port of connection
 def start_sender(port:int=8333):
@@ -142,7 +142,7 @@ def start_sender(port:int=8333):
             ciphertext = node.server.sock.recv(32) # get ciphertext as base16
             checksum = node.server.sock.recv(8) # get base64 checksum
             break
-        b_shared_sec = w.multiply(wallet.b64_d(node.last_received), sender.pri_k)[0]
+        b_shared_sec = w.multiply(wallet.b64_d(node.last_received.decode('utf-8')), sender.pri_k)[0]
         b_shared_sec = ecc.hkdf(b_shared_sec)
 
         # verify checksum to make sure connection is secure
@@ -157,6 +157,7 @@ def start_sender(port:int=8333):
         ip_label.destroy()
         get_ip.destroy()
     get_ip = tk.Button(window, text="enter", command=accept)
+    get_ip.pack()
 
 # stop node connection
 def stop_connection():
@@ -173,6 +174,42 @@ def stop_connection():
         entry.destroy()
         verify_input.destroy()
     verify_input = tk.Button(window, text="enter", command=stop)
+    verify_input.pack()
+
+# send transaction
+def send_tx():
+    var =tk.IntVar()
+    var.set(1.0)
+    spin = Spinbox(window, from_=0.1, to=wlt.balance, width=5, textvariable=var)
+    spin.pack()
+
+    def accept():
+        time.sleep(1)
+        pubk = wallet.b64_d(node.server.sock.recv(425).decode('utf-8')) # get b64 wallet address as ec point
+        amount = int(spin.get())
+        block_index = len(next(os.walk('blocks'))[1])
+        tx = transaction.Transaction(wlt, pubk, amount, block_index)
+        tx.add_transaction()
+        tx.save()
+        node.server.cli.send(str(amount).encode('utf-8') + b' ' + tx.tx_hash.encode('utf-8') + b' ' + wlt.wallet_address) # tx info to connected node
+        verify_input.destroy()
+
+    verify_input = tk.Button(window, text="send transaction", command=accept)
+    verify_input.pack()
+
+def receive_tx():
+    def accept():
+        node.client.sock.send(wlt.wallet_address)
+        buffer = node.receive().decode('utf-8')
+        buffer = buffer.split(' ')
+        amount = int(buffer[0])
+        tx_hash = buffer[1]
+        pubk = wallet.b64_d(buffer[2])
+        block_index = len(next(os.walk('blocks'))[1])
+        print(transaction.tx_receiver(wlt, wallet.b64_d(node.last_received), amount, block_index, tx_hash))
+
+    # alice receives transaction
+    verify_input = tk.Button(window, text="send transaction", command=accept)
     verify_input.pack()
 
 # start node as blockchain node, communicate with other nodes in the network
@@ -201,10 +238,11 @@ def start_mining():
 window.config(menu=menubar)
 
 mining = tk.Button(window, text="mine", command=start_mining)
+mining.pack()
 
 # transaction commands
-transaction_m.add_command(label='send', command=None)
-transaction_m.add_command(label='receive', command=None)
+transaction_m.add_command(label='send', command=send_tx)
+transaction_m.add_command(label='receive', command=receive_tx)
 
 # wallet commands
 wallet_m.add_command(label='new keys', command=wlt.new_keys)

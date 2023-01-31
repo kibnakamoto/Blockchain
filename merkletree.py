@@ -1,5 +1,5 @@
-from ecc.sha512 import Sha512
 from ecc.ecc import Ecdsa
+from ecc.sha512 import Sha512
 from wallet import b64_d
 
 # get transaction hashes and public keys from mempool
@@ -18,7 +18,7 @@ def get_mempool_verification_data() -> tuple[list[str], list[tuple[int, int]], l
             pubks.append(b64_d(line[5]))
             signatures.append(b64_d(line[6]))
             m_hashes.append(int(line[7]))
-            verified.append(ecdsa.verify_signature(signatures[-1], m_hashes[-1], pubks[-1]))
+            verified.append(ecdsa.verify_signature(signatures[-1], m_hashes[-1],  pubks[-1]))
     return hashes, pubks, signatures, m_hashes, verified
 
 class MerkleTreeNode:
@@ -34,6 +34,11 @@ class MerkleTree:
     # default class constructor
     def __init__(self, transactions:list[str]):
         self.transactions = transactions
+
+        # if amount of transactions isn't able to make a merkle-tree
+        if len(self.transactions)%2 != 0:
+            self.transactions.append('0'*64)
+            
 
     def get_root(self) -> str:
         nodes = list()

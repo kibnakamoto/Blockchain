@@ -28,6 +28,7 @@ class TxStructure:
     """ Default Class Initializer """
     def __init__(self, pubk:tuple, amount:float, block_index:int, ecdsa: ecc.Ecdsa, wlt: wallet.Wallet):
         self.now = str(datetime.datetime.now())
+        self.now = self.now.replace(' ', '-')
         self.amount = amount
         self.pubk = pubk # receiver
         self.block_index = block_index
@@ -45,10 +46,7 @@ class TxStructure:
                 self.prev_block_i = "0"
 
         # encode public key as base 64
-        self.b64_pub = b""
-        self.b64_pub += base64.b64encode(str(self.pubk[0]).encode('utf-8'))
-        self.b64_pub += b"|"
-        self.b64_pub += base64.b64encode(str(self.pubk[1]).encode('utf-8'))
+        self.b64_pub = wallet.b64(wlt.pubkey)
 
         # encode private key as base 64
         self.b64_pri = base64.b64encode(str(wlt.prikey).encode('utf-8'))
@@ -56,10 +54,7 @@ class TxStructure:
         self.to_sign = tx_sign_data(self.prev_tx, self.block_index, self.b64_pub, self.amount, self.b64_pri) # message to sign
         self.signature = ecdsa.gen_signature(self.to_sign, wlt.prikey)
         self.m_hash = ecdsa.m_hash
-        self.b64_signature = b""
-        self.b64_signature += base64.b64encode(str(self.signature[1]).encode('utf-8'))
-        self.b64_signature += b"|"
-        self.b64_signature += base64.b64encode(str(self.signature[1]).encode('utf-8'))
+        self.b64_signature = wallet.b64(self.signature)
 
         self.info = int.to_bytes(constants.VERSION, 4, 'big') + b" " + self.prev_tx.encode('utf-8') + b" " + self.b64_signature + b" " + \
                     str(self.block_index).encode('utf-8') + b" " + str(self.amount).encode('utf-8') + b" " + self.b64_pub
@@ -191,43 +186,43 @@ def tx_receiver(wlt: wallet.Wallet, pubk: tuple, amount: float, block_index:int,
 # In mining, verify if mempool transaction previous transaction exists in the specified block
 
 """ for testing wallet verification and transaction making """
-# # alice and bob share their public keys and come up with their shared-secret
-# w = curves.Weierstrass(constants.CURVE.p, constants.CURVE.a, constants.CURVE.b)
-# alice = curves.Curve(constants.CURVE)
-# bob = curves.Curve(constants.CURVE)
-# alice.get_prikey()
-# bob.get_prikey()
-# alice.get_pubkey()
-# bob.get_pubkey()
-# a_shared_sec = w.multiply(bob.pub_k,alice.pri_k)[0]
-# b_shared_sec = w.multiply(alice.pub_k,bob.pri_k)[0]
-# a_shared_sec = ecc.hkdf(a_shared_sec)
-# b_shared_sec = ecc.hkdf(b_shared_sec)
-# 
-# 
-# # Alice
-# wlt = wallet.Wallet()
-# wlt.new_keys()
-# wlt_send = wlt.secure_com_sender(a_shared_sec)
-# checksum = wlt_send[0] # base64
-# ciphertext = wlt_send[1]
-# 
-# # send ciphertext ubytessing P2P node
-# 
-# # Bob
-# wlt1 = wallet.Wallet()
-# wlt1.new_keys()
-# 
-# # verify checksum to make sure connection is secure
-# verified_wallet_connection = wlt1.secure_com_receiver(b_shared_sec, ciphertext.decode('utf-8'), checksum)
-# if verified_wallet_connection:
-#     # continue with transaction
-#     # Bob sends transaction to Alice
-#     wlt1.balance = 50
-#     transaction = Transaction(wlt1, wlt.pubkey, 1.0, 0)
-#     transaction.add_transaction()
-#     transaction.save()
-# 
-#     # alice receives transaction
-#     print(tx_receiver(wlt, wlt1.pubkey, 5.0, 0, transaction.tx_hash))
-#     print("checksum: ", checksum)
+# alice and bob share their public keys and come up with their shared-secret
+w = curves.Weierstrass(constants.CURVE.p, constants.CURVE.a, constants.CURVE.b)
+alice = curves.Curve(constants.CURVE)
+bob = curves.Curve(constants.CURVE)
+alice.get_prikey()
+bob.get_prikey()
+alice.get_pubkey()
+bob.get_pubkey()
+a_shared_sec = w.multiply(bob.pub_k,alice.pri_k)[0]
+b_shared_sec = w.multiply(alice.pub_k,bob.pri_k)[0]
+a_shared_sec = ecc.hkdf(a_shared_sec)
+b_shared_sec = ecc.hkdf(b_shared_sec)
+
+
+# Alice
+wlt = wallet.Wallet()
+wlt.new_keys()
+wlt_send = wlt.secure_com_sender(a_shared_sec)
+checksum = wlt_send[0] # base64
+ciphertext = wlt_send[1]
+
+# send ciphertext ubytessing P2P node
+
+# Bob
+wlt1 = wallet.Wallet()
+wlt1.new_keys()
+
+# verify checksum to make sure connection is secure
+verified_wallet_connection = wlt1.secure_com_receiver(b_shared_sec, ciphertext.decode('utf-8'), checksum)
+if verified_wallet_connection:
+    # continue with transaction
+    # Bob sends transaction to Alice
+    wlt1.balance = 50
+    transaction = Transaction(wlt1, wlt.pubkey, 1.0, 0)
+    transaction.add_transaction()
+    transaction.save()
+
+    # alice receives transaction
+    print(tx_receiver(wlt, wlt1.pubkey, 5.0, 0, transaction.tx_hash))
+    print("checksum: ", checksum)
