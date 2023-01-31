@@ -88,7 +88,7 @@ def get_wallet_keys():
 
 # receiver sends checksum
 def start_receiver(port:int=8333) -> None:
-    ip_label = tk.Label(window, text="receiver ip:")
+    ip_label = tk.Label(window, text="sender ip:")
     ip_label.pack()
     ip_entry = tk.Entry(window)
     ip_entry.pack()
@@ -123,7 +123,7 @@ def start_receiver(port:int=8333) -> None:
 # ip: ip of sender
 # port: port of connection
 def start_sender(port:int=8333):
-    ip_label = tk.Label(window, text="sender ip:")
+    ip_label = tk.Label(window, text="receiver ip:")
     ip_label.pack()
     ip_entry = tk.Entry(window)
     ip_entry.pack()
