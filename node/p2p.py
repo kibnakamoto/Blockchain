@@ -366,7 +366,7 @@ class P2P:
         except Exception:
             pass
 
-        self.port_frwd(port)
+        # self.port_frwd(port)
         port = self.port
         self.bind(port)
         self.listen(tm)

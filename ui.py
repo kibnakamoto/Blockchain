@@ -76,7 +76,7 @@ def wallet_cred() -> None:
 # downloads wallet credentials into user/wallet
 def download_wallet():
     with open("user/wallet", 'w') as f:
-        f.write("prikey: ", hex(wlt.prikey), "\npubkey: ", wallet.b64(wlt.pubkey), "\n")
+        f.write("prikey: " + hex(wlt.prikey) + "\npubkey: " + wallet.b64(wlt.pubkey) + "\n")
 
 def get_wallet_keys(): 
     new_window = tk.Tk()
