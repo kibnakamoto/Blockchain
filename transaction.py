@@ -190,7 +190,8 @@ def tx_receiver(wlt: wallet.Wallet, pubk: tuple, amount: float, block_index:int,
 
 # In mining, verify if mempool transaction previous transaction exists in the specified block
 
-# alice and bob share their public keys and come up with their shared-secret
+""" for testing wallet verification and transaction making """
+# # alice and bob share their public keys and come up with their shared-secret
 # w = curves.Weierstrass(constants.CURVE.p, constants.CURVE.a, constants.CURVE.b)
 # alice = curves.Curve(constants.CURVE)
 # bob = curves.Curve(constants.CURVE)
@@ -223,9 +224,10 @@ def tx_receiver(wlt: wallet.Wallet, pubk: tuple, amount: float, block_index:int,
 #     # continue with transaction
 #     # Bob sends transaction to Alice
 #     wlt1.balance = 50
-#     transaction = Transaction(wlt1, wlt.pubkey, 5.0, 0)
+#     transaction = Transaction(wlt1, wlt.pubkey, 1.0, 0)
 #     transaction.add_transaction()
 #     transaction.save()
 # 
 #     # alice receives transaction
 #     print(tx_receiver(wlt, wlt1.pubkey, 5.0, 0, transaction.tx_hash))
+#     print("checksum: ", checksum)

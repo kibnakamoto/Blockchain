@@ -375,10 +375,11 @@ class P2P:
     # initialize client side from scratch
     def receiver(self, ip, port, buffsize=None, values=None): # buffsize can be custom for efficiency but isn't required
         self.connect(ip, port)
+        self.last_received = self.receive(buffsize)
         if values != None:
-            values.put(self.receive(buffsize))
+            values.put(self.last_received)
         else:
-            return self.receive(buffsize)
+            return self.last_received
 
 
     # port forwarding
@@ -403,8 +404,7 @@ class P2P:
         self.pmapping = self.upnp.deleteportmapping(self.port, 'TCP')
 
     # add node to network by adding it to nodes.json
-    # send nodes.json after connection so that every node knows which ports are open for which IPs
-    def add_node(self, port=8333, filename='nodes.json'): # TODO: remove node from nodes.json when closed, or when active_clients() fails
+    def add_node(self, port=8333, filename='node/nodes.json'): # TODO: remove node from nodes.json when closed, or when active_clients() fails
         with open(filename,'r+') as file:
             data = json.load(file)
             value = {"ip": self.ip, "port": self.port}
@@ -428,7 +428,7 @@ class P2P:
 #     node.send('Hello', addr)
 #     node.disconnect(addr)
 #     break
-# 
+#
 # time.sleep(1)
 # print("SENDER DONE: 354")
 # val = node.receiver("192.168.0.24", 8339)
