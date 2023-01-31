@@ -10,7 +10,11 @@ import json
 import os
 import signal
 import subprocess
-import miniupnpc
+
+try:
+    import miniupnpc
+except ImportError: # if inferior OS (windows)
+    pass
 import requests
 
 # This file is for the peer-to-peer network for nodes to communicate with each other

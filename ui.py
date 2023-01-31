@@ -117,6 +117,7 @@ def start_receiver(port:int=8333) -> None:
         ip_label.destroy()
         get_ip.destroy()
     get_ip = tk.Button(window, text="enter", command=accept)
+    get_ip.pack()
 
 # start sender node
 # ip: ip of sender
