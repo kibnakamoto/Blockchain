@@ -23,12 +23,12 @@ def target_from_bits(bits:int) -> int:
 # calculate target in base256
 # if first value of base256 target is bigger than 0x7f, append 0 to the beggining
 # add length of base256 target to the first 6 bytes of base256 target
-def bits_from_target(target):
+def bits_from_target(target) -> int:
     base256 = bytearray(target.to_bytes((target.bit_length()+7)//8, 'big'))
     if base256[0] > 0x7f:
         base256 = int.to_bytes(0, 1, 'big') + base256
     base256 = int.to_bytes(len(base256), 3, 'big') + base256[:6]
-    return base256
+    return int.from_bytes(base256, 'big')
 
 # get difficulty in compact target bits
 # uses same algorithm as Bitcoin
@@ -71,8 +71,8 @@ class BlockHeader:
         self.timestamp = str(datetime.datetime.now())
         self.version = int.to_bytes(constants.VERSION, 4, 'big')
         self.bits = bits # 8 bytes
-        self.info = self.version + self.prev_hash.encode('utf-8') + self.merkle_root + self.timestamp.encode('utf-8') + \
-                    int.to_bytes(bits, 8, 'big') + int.to_bytes(self.nonce, 8, 'big')
+        self.info = self.version.decode('utf-8') + self.prev_hash + self.merkle_root + self.timestamp + \
+                    str(bits) + str(self.nonce)
         self.block_hash = sha512.Sha512(self.info).hexdigest()
         self.json = {
             "hash": self.block_hash,
@@ -128,14 +128,19 @@ class Block(BlockHeader):
         self.nonce = nonce
         self.transactions = transactions
         tx_line_i = 0
-        while self.mempool:
+        while self.mempool and tx_line_i < len(self.mempool): # check if all transaction exists
             tx_line = self.mempool[tx_line_i]
             if not transaction_exists(tx_line):
                 del self.mempool[tx_line_i]
             tx_line_i += 1
-        blocks_len = len(os.listdir("blocks"))-1
-        with open(f"blocks/{blocks_len-1}/block.json") as f:
-            data = json.load(f)
-            prev_hash = data["hash"]
-            del data
-        super().__init__(merkle_root=merkletree.MerkleTree().get_root(), nonce=self.nonce, block_index=blocks_len, prev_hash=prev_hash, bits=bits_from_target(constants.target))
+        blocks_len = len(os.listdir("blocks")) # block index
+
+        if blocks_len != 0:
+            # access previous block data
+            with open(f"blocks/{blocks_len-1}/block.json") as f:
+                data = json.load(f)
+                prev_hash = data["hash"]
+                del data
+        else:
+            prev_hash = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        super().__init__(merkle_root=merkletree.MerkleTree(self.transactions).get_root(), nonce=self.nonce, block_index=blocks_len, prev_hash=prev_hash, bits=bits_from_target(constants.target))

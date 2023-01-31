@@ -14,7 +14,7 @@ class Mine:
 
         # eliminate transactions if their signatures aren't verified
         i = 0
-        while self.hashes:
+        while self.hashes and i < len(self.hashes):
             if not verified[i]:
                 del verified[i]
                 del m_hashes[i]
@@ -45,7 +45,9 @@ class Mine:
         if t >= count:
             t = count-1
         for i in range(t):
-            self.threads.append(multiprocessing.Process(target=self.find_nonce, name=i).start())
+            thread = multiprocessing.Process(target=self.find_nonce, name=i)
+            self.threads.append(thread)
+            thread.start()
         
         terminate_signal = False
         while not terminate_signal:
@@ -55,8 +57,3 @@ class Mine:
                     thread.terminate()
                     terminate_signal = True
         self.blck.add_block(transactions=self.hashes)
-
-miner = Mine()
-miner.threading_find_nonce()
-print(miner.nonce)
-print(miner.block_hash)

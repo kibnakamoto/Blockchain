@@ -21,3 +21,11 @@ a322993d26e1283e52f55c625ca219ac06dd422188a098a7b7930df36ec727503ef726b28fe5942b
 
 This value is received by
 raise Exception(MerkleTree(get_mempool_verification_data()[0]).get_root())
+
+start mining in mine.py
+miner = Mine()
+miner.threading_find_nonce(t=15) # run 15 threads
+print(miner.nonce)
+print(miner.block_hash)
+
+# too complicated to finish, therefore cannot show output. But it basically mines it
