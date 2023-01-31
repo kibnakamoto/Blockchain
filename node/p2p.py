@@ -221,7 +221,7 @@ class P2P:
         # inititalize ports and client and server connections
         port = self.port
         self.server = Server(self.ip, port)
-        port = self.gen_port()
+        # port = self.gen_port()
         self.client = Client(self.ip, port)
         ### The client port will be server.port-1 for every node
 

@@ -33,6 +33,7 @@ node_m.add_cascade(label='connection', menu=node_opt_m)
 
 # node and wallet of user
 node = p2p.P2P(port=8333, debug=False)
+node.client.port = 8333
 wlt = wallet.Wallet()
 
 # if wallet exists, input wallet credentials (private and public key)
