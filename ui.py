@@ -220,7 +220,7 @@ class NodeUI():
         var.set(1.0)
         spin = Spinbox(window, from_=0.1, to=wlt.balance, width=5, textvariable=var)
         spin.pack()
-
+        wlt.balance = 50 # <------------------------------------ for the sake of testing
         def accept():
             time.sleep(1)
             node.receiver(self.ip, port)
@@ -230,22 +230,34 @@ class NodeUI():
             tx = transaction.Transaction(wlt, pubk, amount, block_index)
             tx.add_transaction()
             tx.save()
-            node.sender(str(amount).encode('utf-8') + b' ' + tx.tx_hash.encode('utf-8') + b' ' + wlt.wallet_address) # tx info to connected node
+            node.sender(port, 9)
+            while True:
+                cli, addr = node.accept()
+                node.send(str(amount).encode('utf-8') + b' ' + tx.tx_hash.encode('utf-8') + b' ' + wlt.wallet_address, addr) # tx info to connected node
+                node.disconnect(addr)
+                break
+            print(f"sucessfully sent {amount} Kibcoin!")
             verify_input.destroy()
 
         verify_input = tk.Button(window, text="send transaction", command=accept)
         verify_input.pack()
 
-    def receive_tx():
+    def receive_tx(self, port:int=8333):
         def accept():
-            node.client.sock.send(wlt.wallet_address)
-            buffer = node.receive().decode('utf-8')
+            node.sender(port, 9)
+            while True:
+                cli, addr = node.accept()
+                node.send(wlt.wallet_address, addr)
+                node.disconnect(addr)
+                break
+            
+            buffer = node.receiver(self.ip, port+1).decode('utf-8')
             buffer = buffer.split(' ')
-            amount = int(buffer[0])
+            amount = float(buffer[0])
             tx_hash = buffer[1]
             pubk = wallet.b64_d(buffer[2])
             block_index = len(next(os.walk('blocks'))[1])
-            print(transaction.tx_receiver(wlt, wallet.b64_d(node.last_received), amount, block_index, tx_hash))
+            print(f"transaction: {transaction.tx_receiver(wlt, wallet.b64_d(pubk), amount, block_index, tx_hash)}")
 
         # alice receives transaction
         verify_input = tk.Button(window, text="send transaction", command=accept)
