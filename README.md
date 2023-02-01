@@ -15,11 +15,12 @@ A blockchain made in python
         1. click on node on the menubar - choose connection, then receiver (if you are the receiver node) or sender (if you are the sender node)
         2. type in the local IP of the other node on the suggested box and press enter
         3. The computer will do the rest and will notify you on the terminal whether the connection is secure or if someone intercepted it. In Docs/wallet.ipynb, the process is explained. If checksum verification fails. Then connection is insecure and you should try again
-        4. Once this process is done, go to transaction on the menubar and choose amount, and fill in whatever is required. the receiver option in menu is for receiving while the sender option is for sending, Do this only after step 3 suceeds 
+        4. Don't forget to either generate new keys or enter pre-existing ones from the wallet menu
+        5. Once this process is done, go to transaction on the menubar and choose amount. the receiver option in menu is for receiving while the sender option is for sending, Do this only after step 3 suceeds, and if you don't do step 4, it will raise error because you don't have a wallet. You can always generate a new wallet
     
 NOTES:
 1. for testing, make sure there are transactions in rtransactions.json and prevtransactions.json. To do this, uncomment the testing code at the end of transactions.py and run the code.
-1. Wallet.balance is bigger than the amount you sent (assign balance to 50)
+1. Wallet.balance is bigger than the amount you sent (assign balance to 50 in ui.py - line 63)
 
 
 

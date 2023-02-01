@@ -58,6 +58,7 @@ node_m.add_cascade(label='connection', menu=node_opt_m)
 # node and wallet of user
 node = p2p.P2P(port=8333, debug=False)
 wlt = wallet.Wallet()
+wlt.balance = 50 # <------------------------------------ for the sake of testing
 
 # if wallet exists, input wallet credentials (private and public key)
 def wallet_cred() -> None:
@@ -222,9 +223,9 @@ class NodeUI():
         var.set(1.0)
         spin = Spinbox(window, from_=0.1, to=wlt.balance, width=5, textvariable=var)
         spin.pack()
-        wlt.balance = 50 # <------------------------------------ for the sake of testing
         def accept():
             time.sleep(1)
+            node.port=port
             node.receiver(self.ip, port)
             pubk = wallet.b64_d(node.last_received.decode('utf-8')) # get b64 wallet address as ec point
             amount = float(spin.get())
@@ -232,6 +233,7 @@ class NodeUI():
             tx = transaction.Transaction(wlt, pubk, amount, block_index)
             tx.add_transaction()
             tx.save()
+            node.port=8336
             node.sender(8336, 9)
             while True:
                 cli, addr = node.accept()
@@ -260,7 +262,7 @@ class NodeUI():
             tx_hash = buffer[1]
             pubk = wallet.b64_d(buffer[2])
             block_index = len(next(os.walk('blocks'))[1])
-            print(f"transaction: {transaction.tx_receiver(wlt, wallet.b64_d(pubk), amount, block_index, tx_hash)}")
+            print(f"transaction: {transaction.tx_receiver(wlt, pubk, amount, block_index, tx_hash)}")
 
         # alice receives transaction
         verify_input = tk.Button(window, text="receive transaction", command=accept)
