@@ -1,3 +1,1 @@
-code ui.py
-code node.py - if enough time
-add date, name, copyright notice on top of every
+code node/node.py - if enough time - node.py is for node connections of all nodes. Not just sender/receiver (mining, all nodes verifying and checking things)

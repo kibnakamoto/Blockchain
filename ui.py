@@ -216,6 +216,7 @@ class NodeUI():
 
     # send transaction
     def send_tx(self, port:int=8333):
+        self.ip = "192.168.0.25"
         var =tk.IntVar()
         var.set(1.0)
         spin = Spinbox(window, from_=0.1, to=wlt.balance, width=5, textvariable=var)
@@ -225,12 +226,12 @@ class NodeUI():
             time.sleep(1)
             node.receiver(self.ip, port)
             pubk = wallet.b64_d(node.last_received.decode('utf-8')) # get b64 wallet address as ec point
-            amount = int(spin.get())
+            amount = float(spin.get())
             block_index = len(next(os.walk('blocks'))[1])
             tx = transaction.Transaction(wlt, pubk, amount, block_index)
             tx.add_transaction()
             tx.save()
-            node.sender(port, 9)
+            node.sender(port+1, 9)
             while True:
                 cli, addr = node.accept()
                 node.send(str(amount).encode('utf-8') + b' ' + tx.tx_hash.encode('utf-8') + b' ' + wlt.wallet_address, addr) # tx info to connected node
@@ -247,7 +248,7 @@ class NodeUI():
             node.sender(port, 9)
             while True:
                 cli, addr = node.accept()
-                node.send(wlt.wallet_address, addr)
+                node.send(wallet.b64(wlt.pubkey), addr)
                 node.disconnect(addr)
                 break
             
