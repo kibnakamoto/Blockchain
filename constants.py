@@ -1,3 +1,13 @@
+"""
+ * Blockchain
+ * Author: Taha Canturk
+ * Author: Taha Canturk
+ *  Github: kibnakamoto
+ *  Project: Blockchain
+ *    Date: Jan 31 - 2023
+ *     Software Version: 1.0
+"""
+
 # contant numbers that may be required in other files.
 import base64
 from hashlib import sha256

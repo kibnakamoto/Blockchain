@@ -1,3 +1,14 @@
+"""
+ * Blockchain
+ * Copyright (C) 2022 Taha Canturk
+
+ * Author: Taha Canturk
+ *  Github: kibnakamoto
+ *  Project: Blockchain
+ *    Date: Jan 31 - 2023
+ *     Software Version: 1.0
+"""
+
 from collections import OrderedDict, deque
 from copy import deepcopy
 from sys import platform

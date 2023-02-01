@@ -1,4 +1,26 @@
-# Graphical User Interface
+"""
+ * Blockchain
+ * Copyright (C) 2022 Taha Canturk
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+ * Author: Taha Canturk
+ * Author: Taha Canturk
+ *  Github: kibnakamoto
+ *  Project: Blockchain
+ *    Date: Jan 31 - 2023
+ *     Software Version: 1.0
+"""
+
+# Graphical User Interface File
 import transaction
 import constants
 import mine
@@ -88,137 +110,146 @@ def get_wallet_keys():
     result_text.insert(tk.END, f'prikey: {wlt.prikey}\npubkey: {wallet.b64(wlt.pubkey)}\n')
     result_text.pack()
 
-# receiver sends checksum
-def start_receiver(port:int=8333) -> None:
-    ip_label = tk.Label(window, text="sender ip:")
-    ip_label.pack()
-    ip_entry = tk.Entry(window)
-    ip_entry.pack()
-    def accept():
-        ip = ip_entry.get()
-        node.receiver(ip, 8333) # get public key of sender as wallet.b64
-        w = curves.Weierstrass(constants.CURVE.p, constants.CURVE.a, constants.CURVE.b)
-        sender = curves.Curve(constants.CURVE)
-        sender.get_prikey()
-        sender.get_pubkey()
+class NodeUI():
+    def __init__(self):
+        self.ip = None # ip of connected node
 
-        node.port=8334
-        node.sender(8334, 9)
-        while True:
-            cli, addr = node.accept()
-            received = wallet.b64_d(node.last_received.decode('utf-8'))
-            a_shared_sec = w.multiply(received,sender.pri_k)[0]
-            a_shared_sec = ecc.hkdf(a_shared_sec)
-            checksum, ciphertext = wlt.secure_com_sender(a_shared_sec)
-            print("checksum:", checksum)
-            print("ciphertext:", ciphertext)
-            print("shared secret:", a_shared_sec)
-            print("public key of sender", received)
-            node.send(wallet.b64(sender.pub_k) + b' ' + ciphertext + b' ' + checksum, addr)
-            cli.close()
-            break
-        print("ciphertext and checksum sent")
-        ip_entry.destroy()
-        ip_label.destroy()
-        get_ip.destroy()
-    get_ip = tk.Button(window, text="enter", command=accept)
-    get_ip.pack()
+    # receiver sends checksum
+    def start_receiver(self, port:int=8333) -> None:
+        ip_label = tk.Label(window, text="sender ip:")
+        ip_label.pack()
+        ip_entry = tk.Entry(window)
+        ip_entry.pack()
+        def accept():
+            self.ip = ip_entry.get()
+            node.receiver(self.ip, port) # get public key of sender as wallet.b64
+            w = curves.Weierstrass(constants.CURVE.p, constants.CURVE.a, constants.CURVE.b)
+            sender = curves.Curve(constants.CURVE)
+            sender.get_prikey()
+            sender.get_pubkey()
 
-# start sender node
-# ip: ip of sender
-# port: port of connection
-def start_sender(port:int=8333):
-    ip_label = tk.Label(window, text="receiver ip:")
-    ip_label.pack()
-    ip_entry = tk.Entry(window)
-    ip_entry.pack()
-    def accept():
-        w = curves.Weierstrass(constants.CURVE.p, constants.CURVE.a, constants.CURVE.b)
-        sender = curves.Curve(constants.CURVE)
-        sender.get_prikey()
-        sender.get_pubkey()
+            node.port=8334
+            node.sender(8334, 9)
+            while True:
+                cli, addr = node.accept()
+                received = wallet.b64_d(node.last_received.decode('utf-8'))
+                a_shared_sec = w.multiply(received,sender.pri_k)[0]
+                a_shared_sec = ecc.hkdf(a_shared_sec)
+                checksum, ciphertext = wlt.secure_com_sender(a_shared_sec)
+                print("checksum:", checksum)
+                print("ciphertext:", ciphertext)
+                print("shared secret:", a_shared_sec)
+                print("public key of sender", received)
+                node.send(wallet.b64(sender.pub_k) + b' ' + ciphertext + b' ' + checksum, addr)
+                cli.close()
+                break
+            print("ciphertext and checksum sent")
+            ip_entry.destroy()
+            ip_label.destroy()
+            get_ip.destroy()
+        get_ip = tk.Button(window, text="enter", command=accept)
+        get_ip.pack()
 
-        # send public key to receiver
-        node.sender(port, 9)
-        while True:
-            cli, addr = node.accept()
-            node.send(wallet.b64(sender.pub_k), addr)
-            node.disconnect(addr)
-            break
-        time.sleep(2)
-        node.receiver(ip_entry.get(), 8334)
-        pubk, ciphertext, checksum = node.last_received.decode('utf-8').split(' ')
-        print("received ciphertext: ", ciphertext)
-        print("received checksum: ", checksum)
-        b_shared_sec = w.multiply(wallet.b64_d(pubk), sender.pri_k)[0]
-        b_shared_sec = ecc.hkdf(b_shared_sec)
-        print("shared secret:", b_shared_sec)
-        print("r")
+    # start sender node
+    # ip: ip of sender
+    # port: port of connection
+    def start_sender(self, port:int=8333):
+        ip_label = tk.Label(window, text="receiver ip:")
+        ip_label.pack()
+        ip_entry = tk.Entry(window)
+        ip_entry.pack()
+        def accept():
+            w = curves.Weierstrass(constants.CURVE.p, constants.CURVE.a, constants.CURVE.b)
+            sender = curves.Curve(constants.CURVE)
+            sender.get_prikey()
+            sender.get_pubkey()
 
-        # verify checksum to make sure connection is secure
-        verified_wallet_connection = wlt.secure_com_receiver(b_shared_sec, ciphertext, checksum.encode('utf-8'))
-        if not verified_wallet_connection:
-            raise ConnectionError("NOT SECURE: ABORTED")
-        else:
-            print("verified, wallet connection secure. Transaction can be securely made")
-        ip_entry.destroy()
-        ip_label.destroy()
-        get_ip.destroy()
-    get_ip = tk.Button(window, text="enter", command=accept)
-    get_ip.pack()
+            # send public key to receiver
+            node.sender(port, 9)
+            while True:
+                cli, addr = node.accept()
+                node.send(wallet.b64(sender.pub_k), addr)
+                node.disconnect(addr)
+                break
+            time.sleep(2)
+            self.ip = ip_entry.get()
+            node.receiver(self.ip, 8334)
+            pubk, ciphertext, checksum = node.last_received.decode('utf-8').split(' ')
+            print("received ciphertext: ", ciphertext)
+            print("received checksum: ", checksum)
+            b_shared_sec = w.multiply(wallet.b64_d(pubk), sender.pri_k)[0]
+            b_shared_sec = ecc.hkdf(b_shared_sec)
+            print("shared secret:", b_shared_sec)
+            print("r")
 
-# stop node connection
-def stop_connection():
-    label = tk.Label(window, text="ip of other node:")
-    label.pack()
-    entry = tk.Entry(window)
-    entry.pack()
-    def stop():
-        try:
-            node.disconnect(entry.get())
-        except KeyError:
-            pass
-        label.destroy()
-        entry.destroy()
-        verify_input.destroy()
-    verify_input = tk.Button(window, text="enter", command=stop)
-    verify_input.pack()
+            # verify checksum to make sure connection is secure
+            verified_wallet_connection = wlt.secure_com_receiver(b_shared_sec, ciphertext, checksum.encode('utf-8'))
+            if not verified_wallet_connection:
+                raise ConnectionError("NOT SECURE: ABORTED")
+            else:
+                print("verified, wallet connection secure. Transaction can be securely made")
+            ip_entry.destroy()
+            ip_label.destroy()
+            get_ip.destroy()
+        get_ip = tk.Button(window, text="enter", command=accept)
+        get_ip.pack()
 
-# send transaction
-def send_tx():
-    var =tk.IntVar()
-    var.set(1.0)
-    spin = Spinbox(window, from_=0.1, to=wlt.balance, width=5, textvariable=var)
-    spin.pack()
+    # stop node connection
+    def stop_connection(self):
+        label = tk.Label(window, text="ip of other node:")
+        label.pack()
+        entry = tk.Entry(window)
+        entry.pack()
+        def stop():
+            try:
+                node.disconnect(entry.get())
+            except KeyError:
+                try:
+                    node.disconnect(self.ip)
+                except KeyError:
+                    pass
+            label.destroy()
+            entry.destroy()
+            verify_input.destroy()
+        verify_input = tk.Button(window, text="enter", command=stop)
+        verify_input.pack()
 
-    def accept():
-        time.sleep(1)
-        pubk = wallet.b64_d(node.server.sock.recv(425).decode('utf-8')) # get b64 wallet address as ec point
-        amount = int(spin.get())
-        block_index = len(next(os.walk('blocks'))[1])
-        tx = transaction.Transaction(wlt, pubk, amount, block_index)
-        tx.add_transaction()
-        tx.save()
-        node.server.cli.send(str(amount).encode('utf-8') + b' ' + tx.tx_hash.encode('utf-8') + b' ' + wlt.wallet_address) # tx info to connected node
-        verify_input.destroy()
+    # send transaction
+    def send_tx(self, port:int=8333):
+        var =tk.IntVar()
+        var.set(1.0)
+        spin = Spinbox(window, from_=0.1, to=wlt.balance, width=5, textvariable=var)
+        spin.pack()
 
-    verify_input = tk.Button(window, text="send transaction", command=accept)
-    verify_input.pack()
+        def accept():
+            time.sleep(1)
+            node.receiver(self.ip, port)
+            pubk = wallet.b64_d(node.last_received.decode('utf-8')) # get b64 wallet address as ec point
+            amount = int(spin.get())
+            block_index = len(next(os.walk('blocks'))[1])
+            tx = transaction.Transaction(wlt, pubk, amount, block_index)
+            tx.add_transaction()
+            tx.save()
+            node.sender(str(amount).encode('utf-8') + b' ' + tx.tx_hash.encode('utf-8') + b' ' + wlt.wallet_address) # tx info to connected node
+            verify_input.destroy()
 
-def receive_tx():
-    def accept():
-        node.client.sock.send(wlt.wallet_address)
-        buffer = node.receive().decode('utf-8')
-        buffer = buffer.split(' ')
-        amount = int(buffer[0])
-        tx_hash = buffer[1]
-        pubk = wallet.b64_d(buffer[2])
-        block_index = len(next(os.walk('blocks'))[1])
-        print(transaction.tx_receiver(wlt, wallet.b64_d(node.last_received), amount, block_index, tx_hash))
+        verify_input = tk.Button(window, text="send transaction", command=accept)
+        verify_input.pack()
 
-    # alice receives transaction
-    verify_input = tk.Button(window, text="send transaction", command=accept)
-    verify_input.pack()
+    def receive_tx():
+        def accept():
+            node.client.sock.send(wlt.wallet_address)
+            buffer = node.receive().decode('utf-8')
+            buffer = buffer.split(' ')
+            amount = int(buffer[0])
+            tx_hash = buffer[1]
+            pubk = wallet.b64_d(buffer[2])
+            block_index = len(next(os.walk('blocks'))[1])
+            print(transaction.tx_receiver(wlt, wallet.b64_d(node.last_received), amount, block_index, tx_hash))
+
+        # alice receives transaction
+        verify_input = tk.Button(window, text="send transaction", command=accept)
+        verify_input.pack()
 
 # start node as blockchain node, communicate with other nodes in the network
 # TODO: not defined yet
@@ -248,9 +279,11 @@ window.config(menu=menubar)
 mining = tk.Button(window, text="mine", command=start_mining)
 mining.pack()
 
+nodeui = NodeUI()
+
 # transaction commands
-transaction_m.add_command(label='send', command=send_tx)
-transaction_m.add_command(label='receive', command=receive_tx)
+transaction_m.add_command(label='send', command=nodeui.send_tx)
+transaction_m.add_command(label='receive', command=nodeui.receive_tx)
 
 # wallet commands
 wallet_m.add_command(label='new keys', command=wlt.new_keys)
@@ -259,10 +292,10 @@ wallet_m.add_command(label='keys', command=wallet_cred) # manually input keys
 wallet_m.add_command(label='download wallet', command=download_wallet) # download wallet creds
 
 # node commands
-node_opt_m.add_command(label='sender', command=start_sender) # as sender, sends wallet checksum
-node_opt_m.add_command(label='receiver', command=start_receiver) # as receiver, verifies wallet checksum
+node_opt_m.add_command(label='sender', command=nodeui.start_sender) # as sender, sends wallet checksum
+node_opt_m.add_command(label='receiver', command=nodeui.start_receiver) # as receiver, verifies wallet checksum
 node_opt_m.add_command(label='start', command=start_node) # start connection to blockchain, contact other nodes
-node_m.add_command(label='stop connection', command=stop_connection)
+node_m.add_command(label='stop connection', command=nodeui.stop_connection)
 
 window.mainloop()
 

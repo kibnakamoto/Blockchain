@@ -1,4 +1,14 @@
-# the wallet structure and account of buyers
+"""
+ * Blockchain
+ * Author: Taha Canturk
+ * Author: Taha Canturk
+ *  Github: kibnakamoto
+ *  Project: Blockchain
+ *    Date: Jan 31 - 2023
+ *     Software Version: 1.0
+"""
+
+# Wallet file
 
 import secrets
 from ecc import ecc, sha512, curves

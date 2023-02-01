@@ -17,6 +17,11 @@ A blockchain made in python
         3. The computer will do the rest and will notify you on the terminal whether the connection is secure or if someone intercepted it. In Docs/wallet.ipynb, the process is explained. If checksum verification fails. Then connection is insecure and you should try again
         4. Once this process is done, go to transaction on the menubar and choose amount, and fill in whatever is required. the receiver option in menu is for receiving while the sender option is for sending, Do this only after step 3 suceeds 
     
+NOTES:
+1. for testing, make sure there are transactions in rtransactions.json and prevtransactions.json. To do this, uncomment the testing code at the end of transactions.py and run the code.
+1. Wallet.balance is bigger than the amount you sent (assign balance to 50)
+
+
 
 remember that while entering information: 
 1. transaction hash is hexadecimal without trailing '0x'

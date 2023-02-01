@@ -1,3 +1,12 @@
+"""
+ * Blockchain
+ * Author: Taha Canturk
+ * Author: Taha Canturk
+ *  Github: kibnakamoto
+ *  Project: Blockchain
+ *    Date: Jan 31 - 2023
+ *     Software Version: 1.0
+"""
 # transaction code for adding to mempool and data to send into the blocks
 # includes a list of transactions resetted every block
 from ecc import sha512, ecc, curves

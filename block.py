@@ -1,3 +1,13 @@
+"""
+ * Blockchain
+ * Author: Taha Canturk
+ * Author: Taha Canturk
+ *  Github: kibnakamoto
+ *  Project: Blockchain
+ *    Date: Jan 31 - 2023
+ *     Software Version: 1.0
+"""
+
 # file for blocks structures and to be added into the blocks folder which is the blockchain
 import constants
 import merkletree

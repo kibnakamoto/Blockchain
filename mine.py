@@ -1,5 +1,14 @@
-import multiprocessing
+"""
+ * Blockchain
+ * Author: Taha Canturk
+ * Author: Taha Canturk
+ *  Github: kibnakamoto
+ *  Project: Blockchain
+ *    Date: Jan 31 - 2023
+ *     Software Version: 1.0
+"""
 
+import multiprocessing
 from collections import deque
 
 import constants
