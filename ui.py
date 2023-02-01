@@ -139,10 +139,10 @@ def start_sender(port:int=8333):
         while True:
             cli, addr = node.accept()
             node.send(wallet.b64(sender.pub_k), addr)
-            node.last_received = node.server.sock.recv(425) # get public key of sender as wallet.b64
+            node.last_received = cli.recv(425) # get public key of sender as wallet.b64
             time.sleep(1) # wait a second for receiver to calculate 
-            ciphertext = node.server.sock.recv(32) # get ciphertext as base16
-            checksum = node.server.sock.recv(8) # get base64 checksum
+            ciphertext = cli.recv(32) # get ciphertext as base16
+            checksum = cli.recv(8) # get base64 checksum
             break
         b_shared_sec = w.multiply(wallet.b64_d(node.last_received.decode('utf-8')), sender.pri_k)[0]
         b_shared_sec = ecc.hkdf(b_shared_sec)

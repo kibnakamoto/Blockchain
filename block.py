@@ -97,6 +97,7 @@ class BlockHeader:
         with open(f"user/{self.block_index}/transactions", 'w') as file:
             for transaction in transactions:
                 file.write(transaction + "\n")
+        open("mempool", 'w') # delete contents of mempool
 
 # find if a transaction exists
 # tx_line: transaction line from unpack_mempool

@@ -363,7 +363,7 @@ class P2P:
     def sender(self, port=8333, tm=True):
         try: # try to delete port if active
             self.delete_port()
-        except Exception:
+        except:
             pass
 
         # self.port_frwd(port)
