@@ -15,6 +15,8 @@ import os
 # from node import node
 # from node import tor
 
+# TODO: add chatsystem. After wallet address is verified. A shared-secret is created. Send encrypted secure messages for communicat=io
+
 window = tk.Tk()
 window.geometry('700x500')
 
@@ -141,20 +143,21 @@ def start_sender(port:int=8333):
         while True:
             cli, addr = node.accept()
             node.send(wallet.b64(sender.pub_k), addr)
-            cli.close()
+            node.disconnect(addr)
             break
+        time.sleep(2)
         node.receiver(ip_entry.get(), 8334)
-        pubk, ciphertext, checksum = node.last_received
+        pubk, ciphertext, checksum = node.last_received.decode('utf-8').split(' ')
         print("received ciphertext: ", ciphertext)
         print("received checksum: ", checksum)
-        b_shared_sec = w.multiply(wallet.b64_d(pubk.decode('utf-8')), sender.pri_k)[0]
+        b_shared_sec = w.multiply(wallet.b64_d(pubk), sender.pri_k)[0]
         b_shared_sec = ecc.hkdf(b_shared_sec)
+        print("shared secret:", b_shared_sec)
+        print("r")
 
         # verify checksum to make sure connection is secure
-        verified_wallet_connection = wlt.secure_com_receiver(b_shared_sec, ciphertext.decode('utf-8'), checksum)
+        verified_wallet_connection = wlt.secure_com_receiver(b_shared_sec, ciphertext, checksum.encode('utf-8'))
         if not verified_wallet_connection:
-            node.client.stop()
-            node.server.quit_server()
             raise ConnectionError("NOT SECURE: ABORTED")
         else:
             print("verified, wallet connection secure. Transaction can be securely made")
