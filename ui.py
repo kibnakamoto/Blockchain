@@ -58,7 +58,7 @@ node_m.add_cascade(label='connection', menu=node_opt_m)
 # node and wallet of user
 node = p2p.P2P(port=8333, debug=False)
 wlt = wallet.Wallet()
-wlt.balance = 50 # <------------------------------------ for the sake of testing
+# wlt.balance = 50 # <------------------------------------ for the sake of testing
 
 # if wallet exists, input wallet credentials (private and public key)
 def wallet_cred() -> None:
@@ -217,8 +217,6 @@ class NodeUI():
 
     # send transaction
     def send_tx(self, port:int=8335):
-        wlt.new_keys()
-        self.ip = "192.168.0.25"
         var =tk.IntVar()
         var.set(1.0)
         spin = Spinbox(window, from_=0.1, to=wlt.balance, width=5, textvariable=var)
