@@ -349,7 +349,10 @@ class P2P:
     # disconnect with specified node
     def disconnect(self, ip):
         self.server.stop(ip, self.debug)
-        self.delete_port()
+        try:
+            self.delete_port()
+        except:
+            pass
 
     # server-side sends data.
     def send(self, data, ip):
@@ -424,7 +427,7 @@ class P2P:
 # # TODO: create new socket for each client, the only way to not terminate client connection after sending message.
 # # maybe try new P2P object for each node
 # 
-# node = P2P(debug=True)
+# node = P2P(port=8333, debug=True)
 # #node.new_ip('192.168.0.19')
 # node.sender(8333, 5)
 # while True:
@@ -432,7 +435,7 @@ class P2P:
 #     node.send('Hello', addr)
 #     node.disconnect(addr)
 #     break
-#
+# 
 # time.sleep(1)
 # print("SENDER DONE: 354")
 # val = node.receiver("192.168.0.24", 8339)

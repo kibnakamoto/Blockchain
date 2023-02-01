@@ -33,7 +33,6 @@ node_m.add_cascade(label='connection', menu=node_opt_m)
 
 # node and wallet of user
 node = p2p.P2P(port=8333, debug=False)
-node.client.port = 8333
 wlt = wallet.Wallet()
 
 # if wallet exists, input wallet credentials (private and public key)
@@ -100,23 +99,30 @@ def start_receiver(port:int=8333) -> None:
         sender = curves.Curve(constants.CURVE)
         sender.get_prikey()
         sender.get_pubkey()
-        node.client.sock.send(wallet.b64(sender.pub_k)) # sends from client. Send from server
-        cli, addr = node.accept()
-        received = wallet.b64_d(node.last_received.decode('utf-8'))
-        a_shared_sec = w.multiply(received,sender.pri_k)[0]
-        a_shared_sec = ecc.hkdf(a_shared_sec)
-        checksum, ciphertext = wlt.secure_com_sender(a_shared_sec)
-        print("checksum:", checksum)
-        print("ciphertext:", ciphertext)
-        print("shared secret:", a_shared_sec)
-        print("public key of sender", received)
-        node.client.sock.send(ciphertext, addr)
-        time.sleep(0.1)
-        node.client.sock.send(checksum, addr)
-        print("ciphertext sent")
-        ip_entry.destroy()
-        ip_label.destroy()
-        get_ip.destroy()
+
+        node.server.port=8334
+        node.sender(8334, 9)
+        while True:
+            cli, addr = node.accept()
+            node.send(wallet.b64(sender.pub_k)) # sends from client. Send from server
+            cli, addr = node.accept()
+            received = wallet.b64_d(node.last_received.decode('utf-8'))
+            a_shared_sec = w.multiply(received,sender.pri_k)[0]
+            a_shared_sec = ecc.hkdf(a_shared_sec)
+            checksum, ciphertext = wlt.secure_com_sender(a_shared_sec)
+            print("checksum:", checksum)
+            print("ciphertext:", ciphertext)
+            print("shared secret:", a_shared_sec)
+            print("public key of sender", received)
+            node.send(ciphertext, addr)
+            time.sleep(0.1)
+            node.send(checksum, addr)
+            print("ciphertext sent")
+            ip_entry.destroy()
+            ip_label.destroy()
+            get_ip.destroy()
+            cli.close()
+            break
     get_ip = tk.Button(window, text="enter", command=accept)
     get_ip.pack()
 
@@ -135,15 +141,17 @@ def start_sender(port:int=8333):
         sender.get_pubkey()
 
         # send public key to receiver
-        node.sender(port, 5)
+        node.sender(port, 9)
         while True:
             cli, addr = node.accept()
             node.send(wallet.b64(sender.pub_k), addr)
-            node.last_received = cli.recv(425) # get public key of sender as wallet.b64
-            time.sleep(1) # wait a second for receiver to calculate 
-            ciphertext = cli.recv(32) # get ciphertext as base16
-            checksum = cli.recv(8) # get base64 checksum
+            cli.close()
             break
+        node.receiver(ip_entry.get(), 8334)
+        node.last_received = node.receive() # get public key of sender as wallet.b64
+        time.sleep(1) # wait a second for receiver to calculate 
+        ciphertext = node.receive() # get ciphertext as base16
+        checksum = node.receive() # get base64 checksum
         b_shared_sec = w.multiply(wallet.b64_d(node.last_received.decode('utf-8')), sender.pri_k)[0]
         b_shared_sec = ecc.hkdf(b_shared_sec)
 
