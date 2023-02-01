@@ -100,11 +100,9 @@ def start_receiver(port:int=8333) -> None:
         sender.get_prikey()
         sender.get_pubkey()
 
-        node.server.port=8334
+        node.port=8334
         node.sender(8334, 9)
         while True:
-            cli, addr = node.accept()
-            node.send(wallet.b64(sender.pub_k)) # sends from client. Send from server
             cli, addr = node.accept()
             received = wallet.b64_d(node.last_received.decode('utf-8'))
             a_shared_sec = w.multiply(received,sender.pri_k)[0]
@@ -114,15 +112,13 @@ def start_receiver(port:int=8333) -> None:
             print("ciphertext:", ciphertext)
             print("shared secret:", a_shared_sec)
             print("public key of sender", received)
-            node.send(ciphertext, addr)
-            time.sleep(0.1)
-            node.send(checksum, addr)
-            print("ciphertext sent")
-            ip_entry.destroy()
-            ip_label.destroy()
-            get_ip.destroy()
+            node.send(wallet.b64(sender.pub_k) + b' ' + ciphertext + b' ' + checksum, addr)
             cli.close()
             break
+        print("ciphertext and checksum sent")
+        ip_entry.destroy()
+        ip_label.destroy()
+        get_ip.destroy()
     get_ip = tk.Button(window, text="enter", command=accept)
     get_ip.pack()
 
@@ -148,11 +144,10 @@ def start_sender(port:int=8333):
             cli.close()
             break
         node.receiver(ip_entry.get(), 8334)
-        node.last_received = node.receive() # get public key of sender as wallet.b64
-        time.sleep(1) # wait a second for receiver to calculate 
-        ciphertext = node.receive() # get ciphertext as base16
-        checksum = node.receive() # get base64 checksum
-        b_shared_sec = w.multiply(wallet.b64_d(node.last_received.decode('utf-8')), sender.pri_k)[0]
+        pubk, ciphertext, checksum = node.last_received
+        print("received ciphertext: ", ciphertext)
+        print("received checksum: ", checksum)
+        b_shared_sec = w.multiply(wallet.b64_d(pubk.decode('utf-8')), sender.pri_k)[0]
         b_shared_sec = ecc.hkdf(b_shared_sec)
 
         # verify checksum to make sure connection is secure
