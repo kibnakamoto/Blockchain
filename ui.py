@@ -215,7 +215,8 @@ class NodeUI():
         verify_input.pack()
 
     # send transaction
-    def send_tx(self, port:int=8333):
+    def send_tx(self, port:int=8335):
+        wlt.new_keys()
         self.ip = "192.168.0.25"
         var =tk.IntVar()
         var.set(1.0)
@@ -231,7 +232,7 @@ class NodeUI():
             tx = transaction.Transaction(wlt, pubk, amount, block_index)
             tx.add_transaction()
             tx.save()
-            node.sender(port+1, 9)
+            node.sender(8336, 9)
             while True:
                 cli, addr = node.accept()
                 node.send(str(amount).encode('utf-8') + b' ' + tx.tx_hash.encode('utf-8') + b' ' + wlt.wallet_address, addr) # tx info to connected node
@@ -243,7 +244,7 @@ class NodeUI():
         verify_input = tk.Button(window, text="send transaction", command=accept)
         verify_input.pack()
 
-    def receive_tx(self, port:int=8333):
+    def receive_tx(self, port:int=8335):
         def accept():
             node.sender(port, 9)
             while True:
@@ -254,6 +255,7 @@ class NodeUI():
             
             buffer = node.receiver(self.ip, port+1).decode('utf-8')
             buffer = buffer.split(' ')
+            print(buffer)
             amount = float(buffer[0])
             tx_hash = buffer[1]
             pubk = wallet.b64_d(buffer[2])
@@ -261,7 +263,7 @@ class NodeUI():
             print(f"transaction: {transaction.tx_receiver(wlt, wallet.b64_d(pubk), amount, block_index, tx_hash)}")
 
         # alice receives transaction
-        verify_input = tk.Button(window, text="send transaction", command=accept)
+        verify_input = tk.Button(window, text="receive transaction", command=accept)
         verify_input.pack()
 
 # start node as blockchain node, communicate with other nodes in the network
