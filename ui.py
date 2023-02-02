@@ -58,7 +58,7 @@ node_m.add_cascade(label='connection', menu=node_opt_m)
 # node and wallet of user
 node = p2p.P2P(port=8333, debug=False)
 wlt = wallet.Wallet()
-# wlt.balance = 50 # <------------------------------------ for the sake of testing
+wlt.balance = 50 # <------------------------------------ for the sake of testing
 
 # if wallet exists, input wallet credentials (private and public key)
 def wallet_cred() -> None:
@@ -222,6 +222,7 @@ class NodeUI():
         spin = Spinbox(window, from_=0.1, to=wlt.balance, width=5, textvariable=var)
         spin.pack()
         def accept():
+            node = p2p.P2P(port)
             time.sleep(1)
             node.port=port
             node.receiver(self.ip, port)
@@ -246,6 +247,8 @@ class NodeUI():
 
     def receive_tx(self, port:int=8335):
         def accept():
+            node = p2p.P2P(port)
+            node.port=port
             node.sender(port, 9)
             while True:
                 cli, addr = node.accept()
