@@ -20,8 +20,7 @@ A blockchain made in python
     
 NOTES:
 1. for testing, make sure there are transactions in rtransactions.json and prevtransactions.json. To do this, uncomment the testing code at the end of transactions.py and run the code.
-1. Wallet.balance is bigger than the amount you sent (assign balance to 50 in ui.py - line 63)
-
+2. Wallet.balance is bigger than the amount you sent (assign balance to 50 in ui.py - line 63)
 
 
 remember that while entering information: 
