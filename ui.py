@@ -21,23 +21,30 @@
 """
 
 # Graphical User Interface File
+import time
+import os
+import sys
+import tkinter as tk
+from tkinter.ttk import *
+
 import transaction
 import constants
 import mine
 import wallet
 from node import p2p
-from ecc import ecc, sha512, curves
+from ecc import ecc, curves
+from node import tor
 
-import tkinter as tk
-from tkinter.ttk import *
-import time
-import os
 
 # not implemented yet
 # from node import node
-# from node import tor
 
-# TODO: add chatsystem. After wallet address is verified. A shared-secret is created. Send encrypted secure messages for communicat=io
+commands = ["-torify"]
+
+TORIFY = "-torify" in sys.argv
+if TORIFY:
+    print("Sudo required...")
+    tor.torify()
 
 window = tk.Tk()
 window.geometry('700x500')
@@ -317,4 +324,5 @@ node_m.add_command(label='stop connection', command=nodeui.stop_connection)
 
 window.mainloop()
 
-
+if TORIFY:
+    tor.detorify()
